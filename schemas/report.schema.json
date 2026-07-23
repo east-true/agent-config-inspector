@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/east-true/agent-config-inspector/schemas/report.schema.json",
+  "title": "Agent Config Inspector report",
+  "type": "object",
+  "required": ["schema_version", "tool", "request", "privacy", "results", "complete"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": { "$ref": "#/$defs/tool" },
+    "request": { "$ref": "#/$defs/request" },
+    "privacy": { "$ref": "#/$defs/privacy" },
+    "results": { "type": "array", "items": { "$ref": "#/$defs/resolution" } },
+    "comparisons": { "type": "array", "items": { "$ref": "#/$defs/comparison" } },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "complete": { "type": "boolean" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "required": ["name", "version", "adapter_registry"],
+      "properties": {
+        "name": { "const": "agent-config-inspector" },
+        "version": { "type": "string" },
+        "adapter_registry": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": ["workspace", "targets", "providers"],
+      "properties": {
+        "workspace": { "const": "<workspace>" },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "providers": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["redaction", "user_context_scanned", "sensitive_output"],
+      "properties": {
+        "redaction": { "enum": ["safe"] },
+        "user_context_scanned": { "type": "boolean" },
+        "sensitive_output": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "provider": {
+      "type": "object",
+      "required": ["id", "provider", "surface", "reported_version", "adapter_id", "support", "depth"],
+      "properties": {
+        "id": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] },
+        "provider": { "type": "string" },
+        "surface": { "type": "string" },
+        "reported_version": { "type": "string" },
+        "adapter_id": { "type": "string" },
+        "support": { "type": "string" },
+        "depth": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "digest": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "enum": ["sha256", "redacted"] },
+        "value": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": ["type", "status", "reason"],
+      "properties": {
+        "type": { "type": "string" },
+        "base": { "type": "string" },
+        "patterns": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "unit": {
+      "type": "object",
+      "required": ["kind", "source_id", "start_line", "end_line", "digest"],
+      "properties": {
+        "kind": { "type": "string" },
+        "source_id": { "type": "string" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 },
+        "digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "origin", "display_path", "kind", "content_visibility", "scope", "reason"],
+      "properties": {
+        "id": { "type": "string" },
+        "origin": { "enum": ["repository", "user"] },
+        "logical_path": { "type": "string" },
+        "display_path": { "type": "string" },
+        "kind": { "type": "string" },
+        "content_visibility": { "enum": ["metadata-only", "hidden"] },
+        "size_bytes": { "type": "integer", "minimum": 0 },
+        "raw_digest": { "$ref": "#/$defs/digest" },
+        "normalized_digest": { "$ref": "#/$defs/digest" },
+        "scope": { "$ref": "#/$defs/scope" },
+        "reason": { "type": "string" },
+        "order": { "type": "integer", "minimum": 1 },
+        "units": { "type": "array", "items": { "$ref": "#/$defs/unit" } }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "kind", "claim", "provider", "surface", "version_range", "source_url", "checked_on", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "claim": { "type": "string" },
+        "provider": { "type": "string" },
+        "surface": { "type": "string" },
+        "version_range": { "type": "string" },
+        "source_url": { "type": "string", "format": "uri" },
+        "checked_on": { "type": "string", "format": "date" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["code", "severity", "title", "summary", "confidence"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^ACI[0-9]{3}$" },
+        "severity": { "enum": ["info", "warning", "error"] },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "providers": { "type": "array", "items": { "type": "string" } },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "enum": ["low", "medium", "high"] },
+        "remediation": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "resolution": {
+      "type": "object",
+      "required": ["provider", "target", "project_root", "state", "prediction", "included_sources", "excluded_sources", "effective_digest", "token_estimate", "evidence"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/provider" },
+        "target": { "type": "string" },
+        "project_root": { "const": "<workspace>" },
+        "state": { "enum": ["complete", "partial", "unknown"] },
+        "prediction": { "enum": ["predicted-effective", "predicted-empty"] },
+        "included_sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "excluded_sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "effective_digest": { "$ref": "#/$defs/digest" },
+        "token_estimate": {
+          "type": "object",
+          "required": ["method", "value"],
+          "properties": { "method": { "type": "string" }, "value": { "type": "integer", "minimum": 0 } },
+          "additionalProperties": false
+        },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      },
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["target", "providers", "shared_unit_count", "equivalent"],
+      "properties": {
+        "target": { "type": "string" },
+        "providers": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "string" } },
+        "only_in_first": { "type": "array", "items": { "type": "string" } },
+        "only_in_second": { "type": "array", "items": { "type": "string" } },
+        "shared_unit_count": { "type": "integer", "minimum": 0 },
+        "equivalent": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

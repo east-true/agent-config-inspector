@@ -1,0 +1,119 @@
+# Agent Config Inspector
+
+Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code and Codex CLI receive for a target path, then explains configuration drift without executing repository code.
+
+> Status: developer preview. The output is a static prediction of instruction discovery, not proof that a model will follow an instruction.
+
+## Why this exists
+
+Coding agents use different filenames, hierarchy rules, imports, and path scopes. A repository can therefore look consistently configured while two agents receive different guidance. Agent Config Inspector makes that difference visible with provenance and conservative findings.
+
+The initial provider registry intentionally contains only:
+
+- `anthropic-claude-code/cli` (`claude` alias)
+- `openai-codex/cli` (`codex` alias)
+
+Gemini, Kimi, Grok, Copilot, and other agents are planned as separate, evidence-backed adapters. Requests for them currently fail as unsupported instead of guessing.
+
+## Current capabilities
+
+- Resolves root and nested `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, recursive `.claude/rules/**/*.md`, path globs, and bounded `@imports`.
+- Resolves root and nested `AGENTS.override.md`, `AGENTS.md`, Codex fallback filenames, and the combined project instruction byte budget.
+- Compares normalized instruction units without an LLM or network call.
+- Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
+- Rejects workspace escapes and external imports by default.
+- Hides instruction contents and absolute workspace paths in text and JSON output.
+- Reads known user-level instruction locations only with `--include-user-context`, then redacts path, content, digest, size, and token estimates.
+
+## Build
+
+Go 1.25 or newer is required.
+
+```bash
+git clone git@github.com:east-true/agent-config-inspector.git
+cd agent-config-inspector
+go build -o bin/agent-config-inspector ./cmd/agent-config-inspector
+```
+
+No third-party Go module is required for the current core.
+
+## Quick start
+
+Scan the current repository for both supported providers:
+
+```bash
+./bin/agent-config-inspector scan .
+```
+
+Explain Codex resolution for one file:
+
+```bash
+./bin/agent-config-inspector explain . \
+  --provider codex \
+  --target backend/src/users.go
+```
+
+Compare Claude Code and Codex CLI as JSON:
+
+```bash
+./bin/agent-config-inspector diff . \
+  --providers claude,codex \
+  --target backend/src/users.go \
+  --format json
+```
+
+Fail CI when a warning or error is found:
+
+```bash
+./bin/agent-config-inspector scan . --fail-on warning
+```
+
+Inspect the exact provider registry:
+
+```bash
+./bin/agent-config-inspector providers list
+./bin/agent-config-inspector providers show claude
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---:|---|
+| 0 | Completed below the configured finding threshold |
+| 1 | A finding reached `--fail-on` |
+| 2 | Invalid CLI usage or configuration |
+| 3 | Internal error or incomplete result |
+| 4 | Unsupported provider, surface, version, or preview command |
+| 5 | Safety policy refused the request |
+
+Warnings do not fail by default. Use `--fail-on warning` for a stricter CI policy or `--fail-on never` for an informational run.
+
+## Privacy model
+
+The default scan is local, offline, read-only, repository-scoped, and does not execute provider CLIs, hooks, build scripts, MCP servers, or repository commands. Output contains metadata and content digests for repository-owned sources, never instruction text.
+
+User-level instructions are excluded unless `--include-user-context` is supplied. In that mode, only documented user instruction locations are inventoried and output identifiers remain opaque. See [Privacy](docs/privacy.md) and [Security policy](SECURITY.md) before publishing a report produced with local context.
+
+## Accuracy boundary
+
+Adapters are based on current official discovery documentation and deliberately report their checked date. Runtime flags, trust decisions, managed policy, version drift, and agent behavior can change the actual result. See the [support matrix](docs/support-matrix.md) and [limitations](docs/limitations.md).
+
+Primary semantics references:
+
+- [Claude Code memory and instruction discovery](https://code.claude.com/docs/en/memory)
+- [Codex `AGENTS.md` guide](https://developers.openai.com/codex/guides/agents-md)
+
+## Development
+
+```bash
+go test ./...
+go vet ./...
+go build ./cmd/agent-config-inspector
+git diff --check
+```
+
+The detailed architecture and roadmap are in [docs/initial-design.md](docs/initial-design.md). Contributions are welcome; read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
