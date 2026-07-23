@@ -45,7 +45,7 @@ The only implemented case is `root-instruction-discovery`. A success confirms th
 | Gemini CLI | `GEMINI.md` | headless prompt, JSON output, default approval | `GEMINI_API_KEY` | empty built-in-tool allowlist, extensions disabled, isolated `GEMINI_CLI_HOME` | [Headless mode](https://geminicli.com/docs/cli/headless/), [Configuration](https://geminicli.com/docs/reference/configuration/) |
 | Kimi Code CLI | `AGENTS.md` | print mode, stream JSON | `KIMI_MODEL_NAME`, `KIMI_MODEL_API_KEY` | documented non-matching tool allowlist, telemetry/update disabled, isolated `KIMI_CODE_HOME` | [`kimi` command](https://www.kimi.com/code/docs/en/kimi-code-cli/reference/kimi-command), [Configuration files](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files), [Environment variables](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/env-vars.html) |
 
-Grok is deliberately skipped and remains unsupported. Adding a static adapter and adding a behavioral probe are independent decisions.
+Grok is deliberately skipped and remains unsupported. Copilot CLI has a static Phase 7 adapter but no behavioral probe. Adding a static adapter and adding a behavioral probe are independent decisions; `probe copilot` returns unsupported without starting Copilot.
 
 ## Credentials
 

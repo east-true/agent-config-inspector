@@ -67,6 +67,29 @@ func TestPlainMarkdownPreservesFrontmatter(t *testing.T) {
 	}
 }
 
+func TestParseFrontmatterCSV(t *testing.T) {
+	t.Run("parses quoted comma separated patterns", func(t *testing.T) {
+		patterns, found, err := ParseFrontmatterCSV([]byte("---\napplyTo: \"**/*.ts,**/*.tsx\"\n---\nRule"), "applyTo")
+		if err != nil || !found || !reflect.DeepEqual(patterns, []string{"**/*.ts", "**/*.tsx"}) {
+			t.Fatalf("patterns = %#v, found = %v, err = %v", patterns, found, err)
+		}
+	})
+	t.Run("preserves commas inside brace alternatives", func(t *testing.T) {
+		patterns, found, err := ParseFrontmatterCSV([]byte("---\napplyTo: \"src/**/*.{ts,tsx},tests/**/*.ts\"\n---\nRule"), "applyTo")
+		if err != nil || !found || !reflect.DeepEqual(patterns, []string{"src/**/*.{ts,tsx}", "tests/**/*.ts"}) {
+			t.Fatalf("patterns = %#v, found = %v, err = %v", patterns, found, err)
+		}
+	})
+	t.Run("distinguishes missing and malformed values", func(t *testing.T) {
+		if _, found, err := ParseFrontmatterCSV([]byte("---\nexcludeAgent: code-review\n---\nRule"), "applyTo"); err != nil || found {
+			t.Fatalf("found = %v, err = %v", found, err)
+		}
+		if _, found, err := ParseFrontmatterCSV([]byte("---\napplyTo:\n---\nRule"), "applyTo"); err == nil || !found {
+			t.Fatalf("found = %v, err = %v", found, err)
+		}
+	})
+}
+
 func TestMatchGlob(t *testing.T) {
 	tests := []struct {
 		name    string

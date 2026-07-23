@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.5.0-dev") {
+		if code != exitOK || !strings.Contains(stdout, "0.6.0-dev") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})
@@ -173,6 +173,12 @@ func TestCLI(t *testing.T) {
 	})
 	t.Run("probe rejects unsupported case", func(t *testing.T) {
 		code, _, stderr := invoke(t, []string{"probe", "claude", "--case", "nested-precedence"})
+		if code != exitUnsupported || !strings.Contains(stderr, "unsupported probe case") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("probe keeps the static Copilot adapter unsupported", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"probe", "copilot"})
 		if code != exitUnsupported || !strings.Contains(stderr, "unsupported probe case") {
 			t.Fatalf("code = %d, stderr = %q", code, stderr)
 		}

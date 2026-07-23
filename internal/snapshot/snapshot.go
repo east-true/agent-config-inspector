@@ -206,7 +206,7 @@ func Validate(lock Lockfile) error {
 		return err
 	}
 	for _, providerID := range lock.Request.Providers {
-		if providerID != "anthropic-claude-code/cli" && providerID != "google-gemini/cli" && providerID != "moonshotai-kimi-code/cli" && providerID != "openai-codex/cli" {
+		if providerID != "anthropic-claude-code/cli" && providerID != "github-copilot/cli" && providerID != "google-gemini/cli" && providerID != "moonshotai-kimi-code/cli" && providerID != "openai-codex/cli" {
 			return fmt.Errorf("%w: unsupported provider identity", ErrInvalidSnapshot)
 		}
 	}

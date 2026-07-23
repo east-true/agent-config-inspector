@@ -26,7 +26,7 @@ The default scanner is designed to:
 - execute no repository code, hooks, provider CLIs, MCP servers, or build commands;
 - read only inside the selected workspace;
 - reject symlinks unless explicitly enabled, and still reject targets outside the workspace;
-- bound individual source size and provider-specific Claude/Gemini import depth, and report Kimi's soft instruction-size guidance;
+- bound individual source size and provider-specific Claude/Gemini/Copilot import depth, and report Kimi's soft instruction-size guidance;
 - omit instruction contents and absolute workspace paths from reports;
 - exclude user-level instructions unless explicitly requested.
 

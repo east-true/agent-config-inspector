@@ -35,9 +35,71 @@ func Load(providerID string, maxSourceBytes int64) ([]provider.ExternalSource, e
 		return loadGemini(home, maxSourceBytes)
 	case "moonshotai-kimi-code/cli":
 		return loadKimi(home, maxSourceBytes)
+	case "github-copilot/cli":
+		return loadCopilot(home, maxSourceBytes)
 	default:
 		return nil, fmt.Errorf("user context is unsupported for provider %q", providerID)
 	}
+}
+
+func loadCopilot(home string, maxSourceBytes int64) ([]provider.ExternalSource, error) {
+	root := os.Getenv("COPILOT_HOME")
+	if root == "" {
+		root = filepath.Join(home, ".copilot")
+	}
+	var result []provider.ExternalSource
+	content, ok, err := readBoundedUnder(root, filepath.Join(root, "copilot-instructions.md"), maxSourceBytes)
+	if err != nil {
+		return nil, err
+	}
+	if ok && strings.TrimSpace(string(content)) != "" {
+		result = append(result, provider.ExternalSource{
+			Label: "<user-instruction-1>", Kind: "copilot-user-instruction", Content: content,
+		})
+	}
+
+	instructionsRoot := filepath.Join(root, "instructions")
+	if info, statErr := os.Lstat(instructionsRoot); statErr == nil && info.Mode()&os.ModeSymlink != 0 {
+		return nil, &SafetyError{message: "user instruction symlinks are not followed"}
+	} else if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
+		return nil, errors.New("cannot inspect a user instruction directory")
+	}
+	var modularPaths []string
+	err = filepath.WalkDir(instructionsRoot, func(candidate string, entry fs.DirEntry, walkErr error) error {
+		if errors.Is(walkErr, os.ErrNotExist) {
+			return filepath.SkipDir
+		}
+		if walkErr != nil {
+			return errors.New("cannot enumerate a user instruction directory")
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			if entry.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !entry.IsDir() && strings.HasSuffix(candidate, ".instructions.md") {
+			modularPaths = append(modularPaths, candidate)
+		}
+		return nil
+	})
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	sort.Strings(modularPaths)
+	for _, modularPath := range modularPaths {
+		content, ok, readErr := readBoundedUnder(root, modularPath, maxSourceBytes)
+		if readErr != nil {
+			return nil, readErr
+		}
+		if !ok || strings.TrimSpace(string(content)) == "" {
+			continue
+		}
+		result = append(result, provider.ExternalSource{
+			Label: fmt.Sprintf("<user-rule-%d>", len(result)+1), Kind: "copilot-user-modular-instruction", Content: content,
+		})
+	}
+	return result, nil
 }
 
 func loadKimi(home string, maxSourceBytes int64) ([]provider.ExternalSource, error) {

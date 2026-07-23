@@ -27,8 +27,18 @@ Support labels describe only the listed capability. They do not imply model-beha
 | `moonshotai-kimi-code/cli` | User instructions | Preview | Explicit opt-in; `KIMI_CODE_HOME` and generic `.agents` scope; opaque output |
 | `moonshotai-kimi-code/cli` | 32 KiB guidance | Preview | Full content retained; warning threshold modeled conservatively |
 | `moonshotai-kimi-code/cli` | Custom agents and `SYSTEM.md` | Unsupported | Runtime selection can replace default prompt injection |
+| `github-copilot/cli` | Standard repository and agent instructions | Preview | v1.0.73; root-to-target `.github/copilot-instructions.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, and `GEMINI.md` |
+| `github-copilot/cli` | Path-specific instructions | Preview | Recursive `*.instructions.md` at project-root and target-nested standard locations |
+| `github-copilot/cli` | `applyTo` glob matching | Preview | Comma-separated documented glob forms; target-relative evaluation |
+| `github-copilot/cli` | Supported `@imports` | Preview | Repository-contained relative imports for Copilot, AGENTS, and Claude instruction families; five-hop cap |
+| `github-copilot/cli` | Identical general-source deduplication | Preview | Exact-byte duplicates removed; deterministic output order is not precedence |
+| `github-copilot/cli` | User instructions | Preview | Explicit opt-in under `COPILOT_HOME`; recursive modular instructions; opaque output; imports not expanded |
+| `github-copilot/cli` | `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` and `/instructions` state | Unsupported | Arbitrary external directories and runtime enable/disable state are not read |
+| `github-copilot/cloud-agent` | All | Unsupported | Independent cloud execution surface; CLI behavior is not inferred |
+| `github-copilot/code-review` | All | Unsupported | Independent review surface; CLI behavior is not inferred |
+| `github-copilot/vscode` | All | Unsupported | Independent IDE surface; CLI behavior is not inferred |
 | Grok | All | Unsupported | Deliberately skipped; no compatibility is inferred |
-| Copilot, others | All | Unsupported | Planned as independent later adapters |
+| Other providers | All | Unsupported | Planned only as independent later adapters |
 
 Behavioral evidence capabilities:
 
@@ -38,7 +48,8 @@ Behavioral evidence capabilities:
 | `openai-codex/cli` | Root `AGENTS.md` discovery | Opt-in probe | Generated fixture; ephemeral exec; read-only sandbox |
 | `google-gemini/cli` | Root `GEMINI.md` discovery | Opt-in probe | Generated fixture; empty core-tool allowlist; extensions disabled |
 | `moonshotai-kimi-code/cli` | Root `AGENTS.md` discovery | Opt-in probe | Generated fixture; isolated config; tools disabled |
-| Grok, Copilot, others | Any behavioral case | Unsupported | No provider process is started |
+| `github-copilot/cli` | Any behavioral case | Unsupported | Static adapter only; no Copilot process is started |
+| Grok, other providers | Any behavioral case | Unsupported | No provider process is started |
 
 An opt-in probe is an available measurement mechanism, not a claim that a case has been confirmed for every installed version. Only a successful result with its detected version and fixture digest is `confirmed`.
 
@@ -63,4 +74,7 @@ Evidence:
 - [Agent Config Inspector Kimi adapter contract](kimi-code-cli.md)
 - [Kimi Code CLI 0.29.0 instruction loader](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.29.0/packages/agent-core/src/profile/context.ts)
 - [Kimi Code CLI agents and instruction files](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents.html)
+- [Agent Config Inspector Copilot CLI adapter contract](copilot-cli.md)
+- [GitHub Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
+- [GitHub Copilot custom-instruction surface support](https://docs.github.com/en/copilot/reference/custom-instructions-support)
 - [Behavioral probe contract and evidence registry](behavioral-probes.md)

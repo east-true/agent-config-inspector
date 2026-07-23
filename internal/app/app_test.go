@@ -19,7 +19,7 @@ func TestScanner(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 6 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") {
+		if len(report.Comparisons) != 10 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") {
 			t.Fatalf("report = %#v", report)
 		}
 	})
@@ -43,11 +43,11 @@ func TestScanner(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 6 || !allEquivalent(report.Comparisons) {
+		if len(report.Comparisons) != 10 || !allEquivalent(report.Comparisons) {
 			t.Fatalf("comparisons = %#v", report.Comparisons)
 		}
 	})
-	for _, providerID := range []string{"grok", "copilot"} {
+	for _, providerID := range []string{"grok", "github-copilot/vscode", "github-copilot/cloud-agent", "github-copilot/code-review"} {
 		t.Run("unsupported provider "+providerID+" is explicit", func(t *testing.T) {
 			_, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{providerID}})
 			if err == nil || !strings.Contains(err.Error(), "unsupported provider") {
@@ -70,6 +70,19 @@ func TestScanner(t *testing.T) {
 		secondJSON, _ := json.Marshal(second)
 		if string(firstJSON) != string(secondJSON) {
 			t.Fatalf("reports differ\n%s\n%s", firstJSON, secondJSON)
+		}
+	})
+	t.Run("malformed Copilot applyTo makes the report partial", func(t *testing.T) {
+		root := t.TempDir()
+		mustWrite(t, filepath.Join(root, ".github", "instructions", "unknown.instructions.md"), "Missing applyTo")
+		report, err := New().Scan(context.Background(), root, agentconfig.ScanOptions{
+			Providers: []string{"copilot"}, Targets: []string{"main.go"},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if report.Complete || len(report.Results) != 1 || report.Results[0].State != "partial" || !hasCode(report.Findings, "ACI027") {
+			t.Fatalf("report = %#v", report)
 		}
 	})
 	t.Run("opted in user content is redacted", func(t *testing.T) {
@@ -137,6 +150,29 @@ func TestScanner(t *testing.T) {
 		}
 		output := outputBuffer.String()
 		if strings.Contains(output, brandSecret) || strings.Contains(output, genericSecret) || strings.Contains(output, brandRoot) || strings.Contains(output, home) || !strings.Contains(output, "<user-instruction-1>") || !strings.Contains(output, "<user-instruction-2>") || !strings.Contains(output, `"algorithm": "redacted"`) {
+			t.Fatalf("unsafe output = %s", output)
+		}
+	})
+	t.Run("opted in Copilot user context and applyTo are redacted", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("COPILOT_HOME", "")
+		secret := "PRIVATE-COPILOT-INSTRUCTION"
+		privatePattern := "private-customer/**/*.go"
+		mustWrite(t, filepath.Join(home, ".copilot", "copilot-instructions.md"), secret)
+		mustWrite(t, filepath.Join(home, ".copilot", "instructions", "private.instructions.md"), "---\napplyTo: \""+privatePattern+"\"\n---\nPrivate rule")
+		report, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{
+			Providers: []string{"copilot"}, Targets: []string{"main.go"}, IncludeUserContext: true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var outputBuffer bytes.Buffer
+		if err := outputreport.WriteJSON(&outputBuffer, report); err != nil {
+			t.Fatal(err)
+		}
+		output := outputBuffer.String()
+		if strings.Contains(output, secret) || strings.Contains(output, privatePattern) || strings.Contains(output, home) || !strings.Contains(output, "<user-instruction-1>") || !strings.Contains(output, `"algorithm": "redacted"`) {
 			t.Fatalf("unsafe output = %s", output)
 		}
 	})

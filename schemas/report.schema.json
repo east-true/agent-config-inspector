@@ -50,7 +50,7 @@
       "type": "object",
       "required": ["id", "provider", "surface", "reported_version", "adapter_id", "support", "depth"],
       "properties": {
-        "id": { "enum": ["anthropic-claude-code/cli", "google-gemini/cli", "moonshotai-kimi-code/cli", "openai-codex/cli"] },
+        "id": { "enum": ["anthropic-claude-code/cli", "github-copilot/cli", "google-gemini/cli", "moonshotai-kimi-code/cli", "openai-codex/cli"] },
         "provider": { "type": "string" },
         "surface": { "type": "string" },
         "reported_version": { "type": "string" },

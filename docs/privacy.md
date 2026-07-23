@@ -21,6 +21,7 @@ It does not contain instruction text, an absolute workspace path, account name, 
 - Codex CLI: the first non-empty `AGENTS.override.md` or `AGENTS.md` in `$CODEX_HOME` (default `~/.codex`);
 - Gemini CLI: `~/.gemini/settings.json` only to determine safe context filenames, followed by matching non-empty files directly under `~/.gemini/`.
 - Kimi Code CLI: `$KIMI_CODE_HOME/AGENTS.md` (default `~/.kimi-code/AGENTS.md`) and the first non-empty `~/.agents/AGENTS.md` or `~/.agents/agents.md`.
+- GitHub Copilot CLI: `copilot-instructions.md` and recursive `instructions/**/*.instructions.md` under `$COPILOT_HOME` (default `~/.copilot`). `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` is not followed.
 
 The scanner does not recursively explore arbitrary home directories. User instruction symlinks are not followed.
 
@@ -28,7 +29,7 @@ User-source output replaces real paths with opaque labels such as `<user-instruc
 
 Even a redacted report can reveal that a local instruction exists or causes a difference. Review it before publication.
 
-Imports referenced by opted-in Gemini user context are detected but never followed. User settings content, configured filenames, import paths, and context-file paths are not emitted.
+Imports referenced by opted-in Gemini or Copilot user context are detected but never followed. User settings content, configured filenames, `applyTo` patterns, import paths, and context-file paths are not emitted.
 
 ## Repository snapshots
 

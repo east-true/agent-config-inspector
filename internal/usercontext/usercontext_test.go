@@ -9,6 +9,49 @@ import (
 )
 
 func TestUserContextBoundaries(t *testing.T) {
+	t.Run("Copilot custom home instructions remain opaque and ordered", func(t *testing.T) {
+		home := t.TempDir()
+		copilotRoot := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("COPILOT_HOME", copilotRoot)
+		if err := os.WriteFile(filepath.Join(copilotRoot, "copilot-instructions.md"), []byte("private general"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		instructionsRoot := filepath.Join(copilotRoot, "instructions", "nested")
+		if err := os.MkdirAll(instructionsRoot, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(instructionsRoot, "go.instructions.md"), []byte("---\napplyTo: \"**/*.go\"\n---\nprivate Go"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		sources, err := Load("github-copilot/cli", 1024)
+		if err != nil || len(sources) != 2 {
+			t.Fatalf("sources = %#v, err = %v", sources, err)
+		}
+		if sources[0].Label != "<user-instruction-1>" || sources[0].Kind != "copilot-user-instruction" || sources[1].Label != "<user-rule-2>" || sources[1].Kind != "copilot-user-modular-instruction" {
+			t.Fatalf("sources = %#v", sources)
+		}
+	})
+
+	t.Run("Copilot modular instruction directory symlink is rejected", func(t *testing.T) {
+		home := t.TempDir()
+		copilotRoot := filepath.Join(home, ".copilot")
+		outside := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("COPILOT_HOME", "")
+		if err := os.MkdirAll(copilotRoot, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(outside, filepath.Join(copilotRoot, "instructions")); err != nil {
+			t.Fatal(err)
+		}
+		_, err := Load("github-copilot/cli", 1024)
+		var safety *SafetyError
+		if !errors.As(err, &safety) {
+			t.Fatalf("err = %v", err)
+		}
+	})
+
 	t.Run("Gemini configured filenames remain opaque", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)

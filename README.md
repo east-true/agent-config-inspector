@@ -1,6 +1,6 @@
 # Agent Config Inspector
 
-Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code, Codex CLI, Gemini CLI, and Kimi Code CLI receive for a target path, then explains configuration drift without executing repository code.
+Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code, Codex CLI, Gemini CLI, Kimi Code CLI, and GitHub Copilot CLI receive for a target path, then explains configuration drift without executing repository code.
 
 > Status: developer preview. The output is a static prediction of instruction discovery, not proof that a model will follow an instruction.
 
@@ -11,11 +11,12 @@ Coding agents use different filenames, hierarchy rules, imports, and path scopes
 The current source registry contains:
 
 - `anthropic-claude-code/cli` (`claude` alias)
+- `github-copilot/cli` (`copilot` alias)
 - `google-gemini/cli` (`gemini` alias)
 - `moonshotai-kimi-code/cli` (`kimi` alias)
 - `openai-codex/cli` (`codex` alias)
 
-Grok has been deliberately skipped. Copilot and other agents remain separate planned adapters; requests for them currently fail as unsupported instead of guessing.
+Grok has been deliberately skipped. Copilot coding agent, code review, VS Code, and other agents remain separate planned adapters; requests for those surfaces fail as unsupported instead of inheriting CLI behavior.
 
 ## Current capabilities
 
@@ -23,6 +24,7 @@ Grok has been deliberately skipped. Copilot and other agents remain separate pla
 - Resolves root and nested `AGENTS.override.md`, `AGENTS.md`, Codex fallback filenames, and the combined project instruction byte budget.
 - Resolves Gemini CLI v0.50.0 hierarchical context, configured context filenames, memory boundaries, target-specific JIT context, and bounded `@imports`.
 - Resolves Kimi Code CLI 0.29.0 user and project instruction hierarchy, branded files, lowercase fallback, and soft 32 KiB guidance.
+- Resolves Copilot CLI v1.0.73 standard instruction locations, compatible agent files, path-specific `applyTo` globs, identical-source deduplication, and bounded supported imports.
 - Compares normalized instruction units without an LLM or network call.
 - Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
 - Rejects workspace escapes and external imports by default.
@@ -30,7 +32,7 @@ Grok has been deliberately skipped. Copilot and other agents remain separate pla
 - Reads known user-level instruction locations only with `--include-user-context`, then redacts path, content, digest, size, and token estimates.
 - Pins deterministic repository-only lockfiles and verifies pull-request drift.
 - Emits GitHub-compatible SARIF 2.1.0 without external or user-source locations.
-- Offers an opt-in, generated-fixture behavioral probe for one root-discovery claim per released provider; dry-run planning is the default.
+- Offers an opt-in, generated-fixture behavioral probe for one root-discovery claim for each of the four adapters released through v0.4.0; Copilot CLI probing is not yet supported.
 
 ## Build
 
@@ -161,6 +163,8 @@ Primary semantics references:
 - [Gemini CLI memory import processor](https://geminicli.com/docs/reference/memport/)
 - [Kimi Code CLI adapter contract](docs/kimi-code-cli.md)
 - [Kimi Code CLI 0.29.0 instruction loader](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.29.0/packages/agent-core/src/profile/context.ts)
+- [Copilot CLI adapter contract](docs/copilot-cli.md)
+- [Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
 - [Behavioral probe contract and evidence registry](docs/behavioral-probes.md)
 
 ## Development

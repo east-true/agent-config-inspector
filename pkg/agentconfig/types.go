@@ -1,10 +1,10 @@
 package agentconfig
 
-var Version = "0.5.0-dev"
+var Version = "0.6.0-dev"
 
 const (
 	SchemaVersion          = 1
-	AdapterRegistryVersion = "2026-07-24.3"
+	AdapterRegistryVersion = "2026-07-24.4"
 )
 
 type ProviderIdentity struct {

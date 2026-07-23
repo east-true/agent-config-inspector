@@ -3,6 +3,7 @@ package parser
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"path"
 	"regexp"
 	"sort"
@@ -30,6 +31,109 @@ func ParseMarkdown(sourceID string, raw []byte, stripComments bool) Parsed {
 // this path so generic Markdown delimiters remain part of the effective text.
 func ParsePlainMarkdown(sourceID string, raw []byte, stripComments bool) Parsed {
 	return parseMarkdown(sourceID, raw, stripComments, false)
+}
+
+// ParseFrontmatterCSV returns a comma-separated scalar from a top-level YAML
+// frontmatter key. It intentionally supports only the small, documented shape
+// used by provider instruction files instead of attempting to be a YAML parser.
+func ParseFrontmatterCSV(raw []byte, key string) ([]string, bool, error) {
+	content := strings.ReplaceAll(string(raw), "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
+	content = strings.TrimPrefix(content, "\ufeff")
+	if !strings.HasPrefix(content, "---\n") {
+		return nil, false, nil
+	}
+	end := strings.Index(content[4:], "\n---\n")
+	if end < 0 {
+		return nil, false, errors.New("frontmatter is not terminated")
+	}
+	front := content[4 : 4+end]
+	prefix := key + ":"
+	var rawValue string
+	found := false
+	for _, line := range strings.Split(front, "\n") {
+		if strings.TrimLeft(line, " \t") != line || !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		if found {
+			return nil, true, errors.New("frontmatter key is repeated")
+		}
+		found = true
+		rawValue = strings.TrimSpace(strings.TrimPrefix(line, prefix))
+	}
+	if !found {
+		return nil, false, nil
+	}
+	if rawValue == "" || rawValue == ">" || rawValue == "|" {
+		return nil, true, errors.New("frontmatter value must be an inline scalar")
+	}
+	if strings.HasPrefix(rawValue, "[") || strings.HasSuffix(rawValue, "]") {
+		if !strings.HasPrefix(rawValue, "[") || !strings.HasSuffix(rawValue, "]") {
+			return nil, true, errors.New("frontmatter list is malformed")
+		}
+		rawValue = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(rawValue, "["), "]"))
+	} else if rawValue[0] == '\'' || rawValue[0] == '"' {
+		quote := rawValue[0]
+		if len(rawValue) < 2 || rawValue[len(rawValue)-1] != quote {
+			return nil, true, errors.New("frontmatter scalar has an unmatched quote")
+		}
+		rawValue = rawValue[1 : len(rawValue)-1]
+	}
+	var values []string
+	items, err := splitFrontmatterCSV(rawValue)
+	if err != nil {
+		return nil, true, err
+	}
+	for _, item := range items {
+		value := strings.TrimSpace(item)
+		if len(value) >= 2 && ((value[0] == '\'' && value[len(value)-1] == '\'') || (value[0] == '"' && value[len(value)-1] == '"')) {
+			value = strings.TrimSpace(value[1 : len(value)-1])
+		}
+		if value == "" {
+			return nil, true, errors.New("frontmatter list contains an empty value")
+		}
+		values = append(values, value)
+	}
+	return stableUnique(values), true, nil
+}
+
+func splitFrontmatterCSV(value string) ([]string, error) {
+	var items []string
+	start := 0
+	braceDepth := 0
+	var quote byte
+	for index := 0; index < len(value); index++ {
+		character := value[index]
+		if quote != 0 {
+			if character == quote && (index == 0 || value[index-1] != '\\') {
+				quote = 0
+			}
+			continue
+		}
+		switch character {
+		case '\'', '"':
+			quote = character
+		case '{':
+			braceDepth++
+		case '}':
+			if braceDepth == 0 {
+				return nil, errors.New("frontmatter glob has an unmatched closing brace")
+			}
+			braceDepth--
+		case ',':
+			if braceDepth == 0 {
+				items = append(items, value[start:index])
+				start = index + 1
+			}
+		}
+	}
+	if quote != 0 {
+		return nil, errors.New("frontmatter list item has an unmatched quote")
+	}
+	if braceDepth != 0 {
+		return nil, errors.New("frontmatter glob has an unmatched opening brace")
+	}
+	return append(items, value[start:]), nil
 }
 
 func parseMarkdown(sourceID string, raw []byte, stripComments, parseMetadata bool) Parsed {

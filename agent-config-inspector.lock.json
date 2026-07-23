@@ -2,15 +2,16 @@
   "schema_version": 1,
   "tool": {
     "name": "agent-config-inspector",
-    "version": "0.5.0-dev"
+    "version": "0.6.0-dev"
   },
-  "adapter_registry": "2026-07-24.3",
+  "adapter_registry": "2026-07-24.4",
   "request": {
     "targets": [
       "."
     ],
     "providers": [
       "anthropic-claude-code/cli",
+      "github-copilot/cli",
       "google-gemini/cli",
       "moonshotai-kimi-code/cli",
       "openai-codex/cli"
@@ -24,6 +25,24 @@
         "version_requirement": "current as of 2026-07-24",
         "support": "preview",
         "depth": "repository-instructions"
+      },
+      "target": ".",
+      "state": "complete",
+      "prediction": "predicted-empty",
+      "included_sources": [],
+      "excluded_sources": [],
+      "effective_repository_digest": {
+        "algorithm": "sha256",
+        "value": "14df4965c05539d5a2ebef2a15708d8006e71ddbc8c9ed18cbbfff16e57e1c77"
+      }
+    },
+    {
+      "provider": {
+        "id": "github-copilot/cli",
+        "adapter_id": "builtin/copilot/v1",
+        "version_requirement": "v1.0.73 semantics checked 2026-07-24",
+        "support": "preview",
+        "depth": "repository-custom-instructions-baseline"
       },
       "target": ".",
       "state": "complete",
@@ -92,6 +111,6 @@
   ],
   "lock_digest": {
     "algorithm": "sha256",
-    "value": "30dd6850f212819f12616eaabe930d16e563ebc5073ac477f94111d3c3296969"
+    "value": "2db1127391176d92f1dc84166764fed7af505f0cad6cb85e4735d0dfb584c903"
   }
 }

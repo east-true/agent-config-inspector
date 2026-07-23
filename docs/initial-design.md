@@ -1,8 +1,8 @@
 # Agent Config Inspector 최초 설계
 
-> 문서 상태: Living design — Phase 5 skipped, Phase 6 source implemented, v0.5.0 release preparation
+> 문서 상태: Living design — Phase 5 skipped, Phase 7 source implemented, v0.6.0 release preparation
 >
-> 문서 버전: 0.5.0-draft
+> 문서 버전: 0.6.0-draft
 >
 > 기준일: 2026-07-24
 >
@@ -38,8 +38,8 @@ adapter 설계가 존재하더라도 실제 adapter와 fixture가 release에 포
 이 문단의 “최초 릴리스”는 역사적 범위를 뜻한다. v0.3.0에는 Gemini CLI가 추가되었고,
 v0.4.0에는 Phase 4의 Kimi Code CLI baseline adapter가 추가되었다. Grok Build Phase 5는
 의도적으로 건너뛰었고 Grok은 계속 `unsupported`다. 현재 source에는 Phase 6의 격리된
-행동 probe가 포함되어 v0.5.0 release gate를 검증 중이며, GitHub Copilot도 아직
-`unsupported`다.
+행동 probe와 Phase 7의 GitHub Copilot CLI baseline adapter가 포함되어 v0.6.0 release
+gate를 검증 중이다. Copilot coding agent, code review, VS Code 표면은 계속 `unsupported`다.
 
 도구가 해결하려는 질문은 단순하다.
 
@@ -238,7 +238,7 @@ Provider별 최초 지원 시점은 다음과 같다. phase 번호는 32절 Road
 | Gemini CLI | Phase 3 | full | 미포함 |
 | Kimi Code CLI | Phase 4 | baseline | 미포함 |
 | Grok Build | 건너뜀 | unsupported | 미포함 |
-| GitHub Copilot | Phase 7 | surface별 baseline | 미포함 |
+| GitHub Copilot CLI | Phase 7 | surface별 baseline | 미포함 |
 | 그 밖의 provider | Phase 8 이후 또는 별도 ADR | 미정 | 미포함 |
 
 첫 공개 MVP의 provider set은 Claude Code CLI와 Codex CLI로 고정한다. 후속 release가
@@ -265,8 +265,8 @@ Codex와 Claude Code를 번갈아 쓰는 개인 개발자가 “왜 한쪽만 te
 
 초기에는 Codex와 Claude Code를 혼용하는 팀이 repository instruction을 변경한 PR이
 한쪽에만 영향을 주는지 CI에서 확인한다. 후속 adapter가 출시되면 같은 workflow의
-provider matrix가 Gemini와 Kimi까지 넓어졌다. Grok은 건너뛰며 다음 adapter 확장은
-Copilot surface를 독립적으로 검토한다.
+provider matrix가 Gemini, Kimi, Copilot CLI까지 넓어졌다. Grok은 건너뛰며 Copilot의
+cloud agent, code review, VS Code 표면은 CLI와 독립적으로 검토한다.
 
 성공 조건:
 
@@ -886,8 +886,9 @@ raw digest와 normalized digest를 모두 유지한다. parity 판정은 어떤 
 Provider 동작은 빠르게 바뀐다. 아래 내용은 hard-coded 영구 사실이 아니라 각 adapter가
 자기 phase에서 모델링해야 할 surface다. **14.1 Codex와 14.2 Claude는 초기 구현 범위이고,
 14.3 Gemini는 Phase 3에서, 14.4 Kimi는 Phase 4에서 구현·출시되었다.** 14.5 Grok은
-건너뛴 조사 backlog이며 14.6 Copilot은 후속 설계다. 구현 시 공식 문서를 다시 확인하고
-evidence record와 golden fixture를 함께 갱신한다.
+건너뛴 조사 backlog이며 14.6의 Copilot CLI는 Phase 7 source에 구현되었다. 나머지 Copilot
+surface를 구현할 때도 공식 문서를 다시 확인하고 evidence record와 golden fixture를 함께
+갱신한다.
 
 ### 14.1 OpenAI Codex CLI adapter
 
@@ -1021,17 +1022,17 @@ instruction family가 한 provider에서 합쳐지는 중요한 compatibility ca
 plugin, hook, skill, MCP 실행이나 전체 Claude compatibility emulation은 자동으로 범위에 들어오지
 않는다. 재개 전까지 모든 Grok 요청은 명시적으로 `unsupported`다.
 
-### 14.6 GitHub Copilot 후속 adapter — Phase 7
+### 14.6 GitHub Copilot surface adapter — Phase 7
 
-Copilot은 Phase 7 전에는 지원하지 않는다. 다음 surface를 하나의 adapter로 뭉치지 않고
-각각 분리하며, 한 surface가 지원되어도 다른 surface까지 지원된다고 표시하지 않는다.
+Phase 7 source는 Copilot CLI만 지원한다. 다음 surface를 하나의 adapter로 뭉치지 않고
+각각 분리하며, CLI가 지원되어도 다른 surface까지 지원된다고 표시하지 않는다.
 
 - `github-copilot/cli`
 - `github-copilot/cloud-agent`
 - `github-copilot/code-review`
 - `github-copilot/vscode`
 
-후속 모델링 대상:
+CLI baseline 구현 대상:
 
 - repository-wide custom instruction
 - `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` 지원 여부
@@ -1040,8 +1041,9 @@ Copilot은 Phase 7 전에는 지원하지 않는다. 다음 surface를 하나의
 - custom instruction discovery 위치
 - multiple source 결합 시 문서화된 제한
 
-Copilot 지원 전에도 parser IR에는 path-specific glob과 surface condition을 표현할 수 있어야
-한다. 다만 구현되지 않은 adapter를 지원한다고 표시하지 않는다.
+CLI baseline은 path-specific glob을 parser IR과 fixture로 고정했다. cloud agent, code review,
+VS Code의 surface condition과 runtime context는 아직 구현하지 않으며 해당 adapter를 지원한다고
+표시하지 않는다. 상세 contract는 [Copilot CLI adapter 문서](copilot-cli.md)를 따른다.
 
 ### 14.7 Adapter support level
 
@@ -2149,7 +2151,7 @@ next: simplify the import graph or raise the limit explicitly
 산출물:
 
 - opt-in probe framework
-- 출시된 provider별 최소 marker fixtures
+- v0.4.0까지 출시된 네 provider별 최소 marker fixtures
 - evidence registry
 - manual conformance workflow
 
@@ -2161,6 +2163,8 @@ next: simplify the import graph or raise the limit explicitly
 - 기본 plan mode에서 provider process와 network를 사용하지 않음
 
 ### Phase 7: GitHub Copilot와 surface별 adapter
+
+상태: source 구현 완료, v0.6.0 release 준비
 
 산출물:
 
@@ -2214,9 +2218,9 @@ next: simplify the import graph or raise the limit explicitly
 - 지원하지 않는 surface를 명시적으로 unsupported 처리
 - 기존 provider의 golden result와 support depth 유지
 
-실제 추가 순서는 Gemini CLI와 Kimi Code CLI까지 완료되었다. Grok Build는 건너뛰었으며,
-다음 adapter 후보는 GitHub Copilot이지만 surface별 근거와 독립 release gate를 먼저 확정한다.
-일정 때문에 여러 provider를 한 release로 합치지 않는다.
+실제 추가 순서는 Gemini CLI, Kimi Code CLI, GitHub Copilot CLI까지 완료되었다. Grok Build는
+건너뛰었으며, 나머지 Copilot 표면은 CLI 근거를 재사용하지 않고 각각 독립 release gate를
+통과해야 한다. 일정 때문에 여러 provider를 한 release로 합치지 않는다.
 
 1.0은 다음을 요구한다.
 
@@ -2326,7 +2330,7 @@ scanner를 둔다.
 7. ~~lockfile filename 확정~~ → `agent-config-inspector.lock.json`으로 결정, ADR 0006 참조
 8. public Go API를 alpha에 노출할지
 9. Kimi를 `full` support로 승격하는 데 필요한 evidence 기준
-10. Copilot surface 지원 순서
+10. Copilot CLI 이후 cloud agent, code review, VS Code surface 지원 순서
 
 미결정 사항을 임시 구현 세부로 숨기지 않는다. 각 결정은 `docs/adr/`에 context,
 options, decision, consequences를 기록한다.
@@ -2431,8 +2435,8 @@ Privacy 지표:
 - 초기 두 provider는 `full` 깊이로 구현하고, 다른 provider 이름만 미리 등록하지 않는다.
 - 단계적 추가에서 Gemini CLI는 v0.3.0, Kimi Code CLI는 v0.4.0 release gate를 통과했다.
   Grok Build는 건너뛰어 unsupported로 유지하고, Phase 6에서는 출시된 네 provider만 대상으로
-  격리된 opt-in root-discovery probe를 추가한다. 다음 adapter 후보인 GitHub Copilot은
-  surface별 독립 evidence와 release gate를 통과해야 한다.
+  격리된 opt-in root-discovery probe를 추가했다. Phase 7은 GitHub Copilot CLI의 standard
+  location, `applyTo`, supported import baseline을 추가하되 다른 Copilot surface는 분리했다.
 - 아직 출시되지 않은 provider와 surface는 추측하지 않고 `unsupported`로 표시한다.
 - 정적 예측, 행동 확인, 모델 준수를 구분한다.
 - user-level instruction은 기본 미탐색이며 opt-in 후에도 원문을 공개하지 않는다.
@@ -2443,9 +2447,9 @@ Privacy 지표:
 아직 확정하지 않은 내용:
 
 - 세부 dependency
-- glob compatibility 구현 방식
+- Copilot 외 provider의 추가 glob dialect 구현 방식
 - Kimi의 `full` support 승격 기준
-- Copilot surface별 정식 지원 순서
+- Copilot cloud agent, code review, VS Code 표면의 후속 지원 순서
 - public Go API 범위
 
 이 문서는 구현을 시작할 수 있을 정도의 초기 경계와 contract를 정의하지만, provider의
