@@ -40,6 +40,8 @@ Snapshot or CI-distribution changes must also preserve deterministic canonical J
 
 Behavioral probe changes must keep plan mode side-effect free, use synthetic generated fixtures, avoid cached-login copying, pass credentials only through documented process-scoped channels, bound and discard raw output, and confirm only the exact measured case. Unit tests must use a fake provider executor; automated test suites must never make real model requests.
 
+MCP inventory fixtures must use synthetic commands, URLs, environment/header names and values, tokens, and OAuth data. Tests should assert that both text and JSON output omit those markers. Inventory code must not start a provider, command helper, or MCP server or perform network and authentication operations.
+
 ## Pull requests
 
 Keep pull requests focused. Describe the observed or documented behavior, the conservative fallback, and the tests that establish it. Generated golden files must only be updated intentionally and should be reviewable in the diff.

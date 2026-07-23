@@ -27,6 +27,7 @@ Grok has been deliberately skipped. Copilot coding agent, code review, VS Code, 
 - Resolves Copilot CLI v1.0.73 standard instruction locations, compatible agent files, path-specific `applyTo` globs, identical-source deduplication, and bounded supported imports.
 - Inventories repository-owned Claude Code and Codex CLI Agent Skills for a selected path without exposing skill descriptions or bodies.
 - Inventories repository-owned Claude Code and Codex CLI custom agents without exposing descriptions, prompts, or configuration values.
+- Inventories repository-owned Claude Code and Codex CLI MCP server declarations without exposing commands, URLs, credentials, or tool configuration values and without starting a server.
 - Compares normalized instruction units without an LLM or network call.
 - Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
 - Rejects workspace escapes and external imports by default.
@@ -92,6 +93,16 @@ Inventory repository custom agents available to Claude Code and Codex CLI:
 ```
 
 This command inspects repository-owned `.claude/agents` and `.codex/agents` directories only. Descriptions, prompts, tool lists, model values, and MCP configuration values remain hidden, and no agent is started. See [Custom agents inventory](docs/agents-inventory.md).
+
+Inventory repository MCP server declarations for Claude Code and Codex CLI:
+
+```bash
+./bin/agent-config-inspector inventory mcp . \
+  --providers claude,codex \
+  --target backend/src/users.go
+```
+
+This command inspects only the repository-root Claude `.mcp.json` and target-hierarchy Codex `.codex/config.toml` files. Commands, arguments, URLs, environment/header names and values, authentication and OAuth details, tool names, and approval values remain hidden. No provider or server is started and no network request is made. See [MCP inventory](docs/mcp-inventory.md).
 
 Fail CI when a warning or error is found:
 
@@ -190,6 +201,7 @@ Primary semantics references:
 - [Behavioral probe contract and evidence registry](docs/behavioral-probes.md)
 - [Agent Skills inventory contract](docs/skills-inventory.md)
 - [Custom agents inventory contract](docs/agents-inventory.md)
+- [MCP inventory contract](docs/mcp-inventory.md)
 
 ## Development
 

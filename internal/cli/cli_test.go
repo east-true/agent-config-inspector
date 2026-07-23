@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.8.0-dev") {
+		if code != exitOK || !strings.Contains(stdout, "0.9.0-dev") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})
@@ -242,6 +242,28 @@ func TestCLI(t *testing.T) {
 	t.Run("agent inventory rejects unsupported provider", func(t *testing.T) {
 		code, _, stderr := invoke(t, []string{"inventory", "agents", t.TempDir(), "--provider", "gemini"})
 		if code != exitUnsupported || !strings.Contains(stderr, "agent inventory is not supported") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("MCP inventory hides connection and credential values", func(t *testing.T) {
+		root := t.TempDir()
+		content := `{"mcpServers":{"private-server":{"type":"http","url":"https://PRIVATE_MCP_URL.invalid","headers":{"PRIVATE_HEADER_NAME":"PRIVATE_HEADER_VALUE"}}}}`
+		if err := os.WriteFile(filepath.Join(root, ".mcp.json"), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := invoke(t, []string{"inventory", "mcp", root, "--provider", "claude", "--format", "json", "--fail-on", "never"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, `"available_servers"`) || !strings.Contains(stdout, `"name": "private-server"`) {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+		for _, secret := range []string{"PRIVATE_MCP_URL", "PRIVATE_HEADER_NAME", "PRIVATE_HEADER_VALUE", root} {
+			if strings.Contains(stdout, secret) {
+				t.Fatalf("inventory leaked %q: %s", secret, stdout)
+			}
+		}
+	})
+	t.Run("MCP inventory rejects unsupported provider", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"inventory", "mcp", t.TempDir(), "--provider", "gemini"})
+		if code != exitUnsupported || !strings.Contains(stderr, "MCP inventory is not supported") {
 			t.Fatalf("code = %d, stderr = %q", code, stderr)
 		}
 	})

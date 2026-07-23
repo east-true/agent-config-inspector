@@ -32,6 +32,8 @@ The default scanner is designed to:
 
 Repository snapshots add stricter boundaries: `pin` and `verify` refuse user context, accept only workspace-relative snapshot paths, reject symlink escapes, and refuse to overwrite an existing file unless it is already a valid snapshot. Snapshot data is limited to repository-relative metadata and domain-separated SHA-256 digests.
 
+Repository configuration inventories do not read user, managed, plugin, or session definitions and never activate the resources they describe. MCP inventory additionally hides commands, arguments, URLs, environment/header names and values, authentication and OAuth details, tool names, and approval values. Its digest covers only the public structural projection, not raw configuration or hidden values. Server names and repository-relative paths are still metadata and should be reviewed before publishing a report from a private repository.
+
 The composite GitHub Action downloads release assets only from this repository, requires a matching entry in `checksums.txt`, verifies SHA-256 before extraction, and accepts only the expected binary and license archive members. Pin the Action reference and its `version` input to an exact release tag when reproducible CI installation matters.
 
 `--include-user-context` expands read authority to documented user instruction locations. Those sources remain opaque in output, but the report can still reveal that user context exists and affects a result. Treat such reports as local artifacts unless reviewed.

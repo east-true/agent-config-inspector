@@ -1,12 +1,13 @@
 package agentconfig
 
-var Version = "0.8.0-dev"
+var Version = "0.9.0-dev"
 
 const (
 	SchemaVersion               = 1
-	AdapterRegistryVersion      = "2026-07-24.6"
+	AdapterRegistryVersion      = "2026-07-24.7"
 	SkillInventorySchemaVersion = 1
 	AgentInventorySchemaVersion = 1
+	MCPInventorySchemaVersion   = 1
 )
 
 type ProviderIdentity struct {
@@ -248,6 +249,61 @@ type AgentInventoryReport struct {
 }
 
 type AgentInventoryOptions struct {
+	Targets        []string
+	Providers      []string
+	FollowSymlinks bool
+	MaxSourceBytes int64
+}
+
+type MCPInventoryRequest struct {
+	Workspace string   `json:"workspace"`
+	Targets   []string `json:"targets"`
+	Providers []string `json:"providers"`
+}
+
+// MCPServerRecord is a deliberately lossy, privacy-safe projection. It never
+// carries command arguments, URLs, header or environment names or values,
+// authentication material, OAuth details, tool names, or approval values.
+type MCPServerRecord struct {
+	Name                    string   `json:"name"`
+	DisplayPath             string   `json:"display_path"`
+	ContributingSources     []string `json:"contributing_sources,omitempty"`
+	ScopeBase               string   `json:"scope_base"`
+	Transport               string   `json:"transport"`
+	Status                  string   `json:"status"`
+	Enabled                 bool     `json:"enabled"`
+	Required                bool     `json:"required"`
+	Executable              bool     `json:"executable"`
+	CredentialFieldsPresent bool     `json:"credential_fields_present"`
+	DeclaredFields          []string `json:"declared_fields,omitempty"`
+	MetadataDigest          *Digest  `json:"metadata_digest,omitempty"`
+	SourceBytes             int64    `json:"source_bytes,omitempty"`
+	Reason                  string   `json:"reason"`
+}
+
+type MCPInventoryResolution struct {
+	Provider         ProviderIdentity  `json:"provider"`
+	Capability       string            `json:"capability"`
+	Target           string            `json:"target"`
+	ProjectRoot      string            `json:"project_root"`
+	State            string            `json:"state"`
+	AvailableServers []MCPServerRecord `json:"available_servers"`
+	ExcludedServers  []MCPServerRecord `json:"excluded_servers"`
+	Evidence         []EvidenceRecord  `json:"evidence"`
+	Findings         []Finding         `json:"findings,omitempty"`
+}
+
+type MCPInventoryReport struct {
+	SchemaVersion int                      `json:"schema_version"`
+	Tool          ToolInfo                 `json:"tool"`
+	Request       MCPInventoryRequest      `json:"request"`
+	Privacy       PrivacyInfo              `json:"privacy"`
+	Results       []MCPInventoryResolution `json:"results"`
+	Findings      []Finding                `json:"findings,omitempty"`
+	Complete      bool                     `json:"complete"`
+}
+
+type MCPInventoryOptions struct {
 	Targets        []string
 	Providers      []string
 	FollowSymlinks bool

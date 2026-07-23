@@ -11,6 +11,7 @@ import (
 
 	agentinventory "github.com/east-true/agent-config-inspector/internal/agents"
 	"github.com/east-true/agent-config-inspector/internal/app"
+	mcpinventory "github.com/east-true/agent-config-inspector/internal/mcp"
 	"github.com/east-true/agent-config-inspector/internal/probe"
 	"github.com/east-true/agent-config-inspector/internal/provider/registry"
 	"github.com/east-true/agent-config-inspector/internal/report"
@@ -95,7 +96,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "inventory requires the skills or agents surface")
+		fmt.Fprintln(stderr, "inventory requires the skills, agents, or mcp surface")
 		writeInventoryUsage(stderr)
 		return exitUsage
 	}
@@ -104,7 +105,7 @@ func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdo
 		return exitOK
 	}
 	surface := args[0]
-	if surface != "skills" && surface != "agents" {
+	if surface != "skills" && surface != "agents" && surface != "mcp" {
 		if surface == "help" {
 			writeInventoryUsage(stdout)
 			return exitOK
@@ -153,12 +154,27 @@ func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdo
 				writeErr = agentinventory.WriteText(stdout, reportValue)
 			}
 		}
+	case "mcp":
+		service := mcpinventory.New(scanner.Registry)
+		reportValue, serviceErr := service.Inventory(ctx, options.workspace, agentconfig.MCPInventoryOptions{
+			Targets: options.targets, Providers: options.providers, FollowSymlinks: options.followSymlinks, MaxSourceBytes: options.maxSourceBytes,
+		})
+		inventoryErr = serviceErr
+		if inventoryErr == nil {
+			findings, complete = reportValue.Findings, reportValue.Complete
+			if options.format == "json" {
+				writeErr = mcpinventory.WriteJSON(stdout, reportValue)
+			} else {
+				writeErr = mcpinventory.WriteText(stdout, reportValue)
+			}
+		}
 	}
 	if inventoryErr != nil {
 		var unsupportedInventory *skills.UnsupportedError
 		var unsupportedAgentInventory *agentinventory.UnsupportedError
+		var unsupportedMCPInventory *mcpinventory.UnsupportedError
 		var unsupportedProvider *registry.UnsupportedError
-		if errors.As(inventoryErr, &unsupportedInventory) || errors.As(inventoryErr, &unsupportedAgentInventory) || errors.As(inventoryErr, &unsupportedProvider) {
+		if errors.As(inventoryErr, &unsupportedInventory) || errors.As(inventoryErr, &unsupportedAgentInventory) || errors.As(inventoryErr, &unsupportedMCPInventory) || errors.As(inventoryErr, &unsupportedProvider) {
 			fmt.Fprintln(stderr, inventoryErr)
 			return exitUnsupported
 		}
@@ -642,6 +658,7 @@ func writeUsage(writer io.Writer) {
 		"  agent-config-inspector probe <provider> [--case <id>] [--execute --acknowledge-quota]",
 		"  agent-config-inspector inventory skills [workspace] [--providers claude,codex] [--target <path>]",
 		"  agent-config-inspector inventory agents [workspace] [--providers claude,codex] [--target <path>]",
+		"  agent-config-inspector inventory mcp [workspace] [--providers claude,codex] [--target <path>]",
 		"  agent-config-inspector providers list",
 		"  agent-config-inspector providers show <id>",
 		"  agent-config-inspector version",
@@ -658,8 +675,9 @@ func writeInventoryUsage(writer io.Writer) {
 		"Usage:",
 		"  agent-config-inspector inventory skills [workspace] [options]",
 		"  agent-config-inspector inventory agents [workspace] [options]",
+		"  agent-config-inspector inventory mcp [workspace] [options]",
 		"",
-		"Inventories repository-owned Agent Skills or custom agents without showing sensitive bodies.",
+		"Inventories repository-owned Agent Skills, custom agents, or MCP servers without showing sensitive values.",
 		"The selected target represents the provider launch or accessed path.",
 		"",
 		"Options:",

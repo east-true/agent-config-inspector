@@ -50,13 +50,15 @@ SARIF uses the same boundary. Only validated repository-relative paths can becom
 
 ## Repository configuration inventories
 
-`inventory skills` and `inventory agents` are repository-only surfaces. They do not offer `--include-user-context` and do not read personal, admin, managed, plugin, built-in, or session definitions.
+`inventory skills`, `inventory agents`, and `inventory mcp` are repository-only surfaces. They do not offer `--include-user-context` and do not read personal, local, admin, managed, plugin, built-in, session, or CLI-added definitions.
 
 Skills output hides descriptions and `SKILL.md` bodies. Custom-agent output hides descriptions, Markdown prompts, `developer_instructions`, and all model, tool, MCP, hook, permission, command, URL, and environment values. The agent parser emits only an allowlisted set of capability field names and ignores arbitrary unknown metadata in output.
 
 Inventory reports can still contain repository-relative paths, names, byte counts, and unkeyed domain-separated SHA-256 digests. These are fingerprints and repository metadata, not encryption or anonymization. Review them before publishing output from a private repository; do not publish when even filenames, agent names, or equality testing against a known candidate value would be sensitive.
 
-Neither inventory traverses supporting executable resources or starts a provider. Direct source symlinks are skipped by default. Opt-in following is limited to resolved files inside the selected workspace, and absolute targets are never printed.
+No repository inventory traverses supporting executable resources or starts a provider. Direct source symlinks are skipped or refused by default, depending on whether the source is a discovered entry or an exact configuration file. Opt-in following is limited to resolved files inside the selected workspace, and absolute targets are never printed.
+
+MCP inventory output hides command and argument values, URLs, environment and header names and values, tokens, authentication settings, OAuth details, scopes, tool names, and approval values. It exposes only an allowlisted structural projection such as normalized transport, enabled/required state, local-execution potential, and credential-field-family presence. Its `metadata_digest` is computed from that public projection, never from raw configuration bytes or a hidden value. The inventory does not start a command helper or server, connect to an endpoint, authenticate, or read runtime trust and approval state.
 
 ## External imports
 

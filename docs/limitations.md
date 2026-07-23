@@ -43,6 +43,11 @@ Current limitations:
 - Agent descriptions, prompts, and every tool/model/MCP/permission value are hidden. Names, repository-relative paths, byte counts, and unkeyed content digests remain report metadata and should be reviewed before publishing output from a private repository.
 - Agent inventory never predicts task matching, automatic delegation, permission effectiveness, tool availability, model behavior, or prompt compliance, and it never starts an agent or provider CLI.
 - Direct agent-file symlinks are listed but skipped by default. Opt-in following is limited to files whose resolved target remains inside the workspace; symlinked agent directories are not recursively traversed.
+- MCP inventory supports only the repository-root Claude Code `.mcp.json` and target-hierarchy Codex CLI `.codex/config.toml` sources. User, local, managed, plugin, session, and CLI-added MCP definitions are not read.
+- Claude project approval and Codex project trust are runtime state and remain unobserved. Server startup, reachability, protocol negotiation, authentication, OAuth, tool discovery, and tool approval are not tested.
+- Codex MCP table merging follows the current recursive project-configuration merge implementation. The bounded TOML projection supports ordinary and quoted table/key declarations but conservatively rejects an inline `mcp_servers = {...}` declaration; full TOML validation and installed-version drift detection remain outside this preview.
+- MCP commands, arguments, URLs, environment/header names and values, tokens, OAuth details, scopes, tool names, and approval values are deliberately hidden. Server names, paths, byte counts, and public-structure digests remain repository metadata and should be reviewed before publication.
+- MCP inventory never starts a provider, local command, command helper, or MCP server and never makes a network request. Exact configuration-file symlinks are refused by default; opt-in following remains workspace-contained.
 - The composite GitHub Action requires a published release with matching platform tarballs and `checksums.txt`; branch-only revisions cannot be installed through the Action.
 - Release archives currently target Linux and macOS on amd64 and arm64. Windows packaging is not yet available.
 

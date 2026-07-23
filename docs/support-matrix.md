@@ -66,6 +66,11 @@ Configuration inventory capabilities:
 | Codex CLI | `[agents.*]` declarations and explicit `config_file` roles | Unsupported | Standalone project agent files only |
 | Gemini, Kimi, Copilot, Grok, other providers | Custom agents | Unsupported | Similar formats or names do not imply compatibility |
 | All providers | Agent selection, delegation, and execution | Unsupported | Inventory never starts a provider or predicts runtime selection |
+| `anthropic-claude-code/cli` | Repository MCP servers | Preview | Root `.mcp.json`; stdio/HTTP/SSE/WebSocket structure; runtime approval unobserved; all connection and credential values hidden |
+| `openai-codex/cli` | Repository MCP servers | Preview | Trusted target hierarchy `.codex/config.toml`; recursive table merge; stdio/HTTP structure; all connection and credential values hidden |
+| Claude Code and Codex CLI | User, local, managed, plugin, session, and CLI-added MCP servers | Unsupported | Repository-only Phase 8c boundary |
+| Gemini, Kimi, Copilot, Grok, other providers | MCP inventory | Unsupported | Provider storage, merge, trust, and transport contracts are not inferred |
+| All providers | MCP startup, connectivity, authentication, tools, and approval | Unsupported | Inventory is static and never starts or contacts a server |
 
 An opt-in probe is an available measurement mechanism, not a claim that a case has been confirmed for every installed version. Only a successful result with its detected version and fixture digest is `confirmed`.
 
@@ -80,6 +85,7 @@ Output and CI capabilities:
 | Behavioral probe plan/result JSON | Preview | Schema v1; raw provider response and credentials omitted |
 | Skills inventory text/JSON | Preview | Independent schema v1; repository-relative paths; metadata content hidden |
 | Custom agents inventory text/JSON | Preview | Independent schema v1; repository-relative paths; prompts and configuration values hidden |
+| MCP inventory text/JSON | Preview | Independent schema v1; repository-relative paths; commands, connections, credentials, tools, and approval values hidden |
 
 Evidence:
 
@@ -104,3 +110,7 @@ Evidence:
 - [Claude Code subagents](https://code.claude.com/docs/en/sub-agents)
 - [OpenAI Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents.md)
 - [OpenAI Codex custom-agent loader](https://github.com/openai/codex/blob/main/codex-rs/core/src/config/agent_roles.rs)
+- [Repository MCP inventory contract](mcp-inventory.md)
+- [Claude Code MCP configuration](https://code.claude.com/docs/en/mcp)
+- [Codex MCP configuration](https://learn.chatgpt.com/docs/extend/mcp)
+- [Codex recursive configuration merge](https://github.com/openai/codex/blob/main/codex-rs/config/src/merge.rs)

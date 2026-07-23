@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/east-true/agent-config-inspector/schemas/mcp.schema.json",
+  "title": "Agent Config Inspector MCP inventory",
+  "type": "object",
+  "required": ["schema_version", "tool", "request", "privacy", "results", "complete"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": { "$ref": "#/$defs/tool" },
+    "request": { "$ref": "#/$defs/request" },
+    "privacy": { "$ref": "#/$defs/privacy" },
+    "results": { "type": "array", "items": { "$ref": "#/$defs/result" } },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "complete": { "type": "boolean" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "required": ["name", "version", "adapter_registry"],
+      "properties": {
+        "name": { "const": "agent-config-inspector" },
+        "version": { "type": "string" },
+        "adapter_registry": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": ["workspace", "targets", "providers"],
+      "properties": {
+        "workspace": { "const": "<workspace>" },
+        "targets": { "type": "array", "items": { "$ref": "#/$defs/path" } },
+        "providers": {
+          "type": "array",
+          "items": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["redaction", "user_context_scanned", "sensitive_output"],
+      "properties": {
+        "redaction": { "const": "safe" },
+        "user_context_scanned": { "const": false },
+        "sensitive_output": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "^(?:/|[A-Za-z]:|\\.\\.?/|.*[\\r\\n\\u0000])" }
+    },
+    "digest": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "value": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "provider": {
+      "type": "object",
+      "required": ["id", "provider", "surface", "reported_version", "adapter_id", "support", "depth"],
+      "properties": {
+        "id": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] },
+        "provider": { "type": "string" },
+        "surface": { "type": "string" },
+        "reported_version": { "type": "string" },
+        "adapter_id": { "type": "string" },
+        "support": { "type": "string" },
+        "depth": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "server": {
+      "type": "object",
+      "required": [
+        "name", "display_path", "scope_base", "transport", "status", "enabled", "required",
+        "executable", "credential_fields_present", "reason"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "display_path": { "$ref": "#/$defs/path" },
+        "contributing_sources": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/path" }
+        },
+        "scope_base": { "$ref": "#/$defs/path" },
+        "transport": { "enum": ["stdio", "http", "sse", "ws", "unknown"] },
+        "status": { "enum": ["configured", "disabled", "unconfigured", "invalid"] },
+        "enabled": { "type": "boolean" },
+        "required": { "type": "boolean" },
+        "executable": { "type": "boolean" },
+        "credential_fields_present": { "type": "boolean" },
+        "declared_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "alwaysLoad", "args", "auth", "bearer_token_env_var", "command", "cwd",
+              "default_tools_approval_mode", "disabled_tools", "enabled", "enabled_tools", "env",
+              "environment_id", "env_http_headers", "env_vars", "experimental_environment", "headers",
+              "headersHelper", "http_headers", "oauth", "oauth_resource", "required", "scopes",
+              "startup_timeout_ms", "startup_timeout_sec", "supports_parallel_tool_calls", "timeout",
+              "tool_timeout_sec", "tools", "type", "url"
+            ]
+          }
+        },
+        "metadata_digest": { "$ref": "#/$defs/digest" },
+        "source_bytes": { "type": "integer", "minimum": 0 },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "kind", "claim", "provider", "surface", "version_range", "source_url", "checked_on", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "claim": { "type": "string" },
+        "provider": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] },
+        "surface": { "type": "string" },
+        "version_range": { "type": "string" },
+        "source_url": { "type": "string", "format": "uri" },
+        "checked_on": { "type": "string", "format": "date" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["code", "severity", "title", "summary", "confidence"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^ACI[0-9]{3}$" },
+        "severity": { "enum": ["info", "warning", "error"] },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "providers": { "type": "array", "items": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] } },
+        "targets": { "type": "array", "items": { "$ref": "#/$defs/path" } },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/path" } },
+        "confidence": { "type": "string" },
+        "remediation": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["provider", "capability", "target", "project_root", "state", "available_servers", "excluded_servers", "evidence"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/provider" },
+        "capability": { "const": "repository-mcp-inventory" },
+        "target": { "$ref": "#/$defs/path" },
+        "project_root": { "const": "<workspace>" },
+        "state": { "enum": ["complete", "partial"] },
+        "available_servers": { "type": "array", "items": { "$ref": "#/$defs/server" } },
+        "excluded_servers": { "type": "array", "items": { "$ref": "#/$defs/server" } },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}
