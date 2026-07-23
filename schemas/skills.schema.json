@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/east-true/agent-config-inspector/schemas/skills.schema.json",
+  "title": "Agent Config Inspector skills inventory",
+  "type": "object",
+  "required": ["schema_version", "tool", "request", "privacy", "results", "complete"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": { "$ref": "#/$defs/tool" },
+    "request": { "$ref": "#/$defs/request" },
+    "privacy": { "$ref": "#/$defs/privacy" },
+    "results": { "type": "array", "items": { "$ref": "#/$defs/result" } },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "complete": { "type": "boolean" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "required": ["name", "version", "adapter_registry"],
+      "properties": {
+        "name": { "const": "agent-config-inspector" },
+        "version": { "type": "string" },
+        "adapter_registry": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": ["workspace", "targets", "providers"],
+      "properties": {
+        "workspace": { "const": "<workspace>" },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "providers": {
+          "type": "array",
+          "items": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["redaction", "user_context_scanned", "sensitive_output"],
+      "properties": {
+        "redaction": { "const": "safe" },
+        "user_context_scanned": { "const": false },
+        "sensitive_output": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "digest": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "value": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "provider": {
+      "type": "object",
+      "required": ["id", "provider", "surface", "reported_version", "adapter_id", "support", "depth"],
+      "properties": {
+        "id": { "enum": ["anthropic-claude-code/cli", "openai-codex/cli"] },
+        "provider": { "type": "string" },
+        "surface": { "type": "string" },
+        "reported_version": { "type": "string" },
+        "adapter_id": { "type": "string" },
+        "support": { "type": "string" },
+        "depth": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "skill": {
+      "type": "object",
+      "required": ["name", "display_path", "scope_base", "metadata_status", "description_present", "reason"],
+      "properties": {
+        "name": { "type": "string" },
+        "declared_name": { "type": "string" },
+        "display_path": { "type": "string" },
+        "scope_base": { "type": "string" },
+        "source_digest": { "$ref": "#/$defs/digest" },
+        "source_bytes": { "type": "integer", "minimum": 0 },
+        "metadata_status": { "enum": ["valid", "partial", "invalid", "unread"] },
+        "description_present": { "type": "boolean" },
+        "description_bytes": { "type": "integer", "minimum": 0 },
+        "description_digest": { "$ref": "#/$defs/digest" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "kind", "claim", "provider", "surface", "version_range", "source_url", "checked_on", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "claim": { "type": "string" },
+        "provider": { "type": "string" },
+        "surface": { "type": "string" },
+        "version_range": { "type": "string" },
+        "source_url": { "type": "string", "format": "uri" },
+        "checked_on": { "type": "string", "format": "date" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["code", "severity", "title", "summary", "confidence"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^ACI[0-9]{3}$" },
+        "severity": { "enum": ["info", "warning", "error"] },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "providers": { "type": "array", "items": { "type": "string" } },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "enum": ["low", "medium", "high"] },
+        "remediation": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["provider", "capability", "target", "project_root", "state", "available_skills", "excluded_skills", "evidence"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/provider" },
+        "capability": { "const": "repository-skills-inventory" },
+        "target": { "type": "string" },
+        "project_root": { "const": "<workspace>" },
+        "state": { "enum": ["complete", "partial"] },
+        "available_skills": { "type": "array", "items": { "$ref": "#/$defs/skill" } },
+        "excluded_skills": { "type": "array", "items": { "$ref": "#/$defs/skill" } },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

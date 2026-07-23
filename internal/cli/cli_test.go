@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.6.0") {
+		if code != exitOK || !strings.Contains(stdout, "0.7.0-dev") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})
@@ -186,6 +186,36 @@ func TestCLI(t *testing.T) {
 	t.Run("probe keeps Grok unsupported", func(t *testing.T) {
 		code, _, stderr := invoke(t, []string{"probe", "grok"})
 		if code != exitUnsupported || !strings.Contains(stderr, "unsupported provider") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("skill inventory hides metadata content", func(t *testing.T) {
+		root := t.TempDir()
+		skillDir := filepath.Join(root, ".claude", "skills", "review")
+		if err := os.MkdirAll(skillDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		content := "---\ndescription: PRIVATE_DESCRIPTION_MARKER\n---\nPRIVATE_BODY_MARKER\n"
+		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := invoke(t, []string{"inventory", "skills", root, "--provider", "claude", "--format", "json"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, `"available_skills"`) || !strings.Contains(stdout, `"name": "review"`) {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+		if strings.Contains(stdout, "PRIVATE_DESCRIPTION_MARKER") || strings.Contains(stdout, "PRIVATE_BODY_MARKER") || strings.Contains(stdout, root) {
+			t.Fatalf("inventory leaked content or absolute path: %s", stdout)
+		}
+	})
+	t.Run("skill inventory rejects unsupported provider", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"inventory", "skills", t.TempDir(), "--provider", "gemini"})
+		if code != exitUnsupported || !strings.Contains(stderr, "skill inventory is not supported") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("skill inventory refuses workspace escape", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"inventory", "skills", t.TempDir(), "--target", "../outside"})
+		if code != exitSafety || stderr == "" {
 			t.Fatalf("code = %d, stderr = %q", code, stderr)
 		}
 	})

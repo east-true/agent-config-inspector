@@ -25,6 +25,12 @@ type File struct {
 	Size    int64
 }
 
+type ChildDirectory struct {
+	Logical    string
+	Symlink    bool
+	Accessible bool
+}
+
 type View struct {
 	root           string
 	maxSourceBytes int64
@@ -283,6 +289,51 @@ func (v *View) WalkFiles(logicalDir string, accept func(string, fs.DirEntry) boo
 	})
 	sort.Strings(files)
 	return files, err
+}
+
+// ChildDirectories returns only the immediate directory entries below a
+// logical directory. Symlinked entries are reported but remain inaccessible
+// unless workspace symlink following was explicitly enabled.
+func (v *View) ChildDirectories(logicalDir string) ([]ChildDirectory, error) {
+	abs, cleaned, err := v.resolve(logicalDir)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(abs)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	directories := make([]ChildDirectory, 0, len(entries))
+	for _, entry := range entries {
+		candidate := Join(cleaned, entry.Name())
+		if entry.Type()&os.ModeSymlink != 0 {
+			item := ChildDirectory{Logical: candidate, Symlink: true, Accessible: false}
+			if v.followSymlinks {
+				candidateAbs := filepath.Join(abs, entry.Name())
+				if err := v.checkSymlinkPath(candidateAbs); err != nil {
+					return nil, err
+				}
+				info, statErr := os.Stat(candidateAbs)
+				if statErr != nil {
+					return nil, statErr
+				}
+				if !info.IsDir() {
+					continue
+				}
+				item.Accessible = true
+			}
+			directories = append(directories, item)
+			continue
+		}
+		if entry.IsDir() {
+			directories = append(directories, ChildDirectory{Logical: candidate, Accessible: true})
+		}
+	}
+	sort.Slice(directories, func(i, j int) bool { return directories[i].Logical < directories[j].Logical })
+	return directories, nil
 }
 
 func Join(dir, name string) string {

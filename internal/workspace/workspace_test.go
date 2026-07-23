@@ -87,6 +87,28 @@ func TestViewBoundaries(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	})
+	t.Run("lists immediate child directories with safe symlink state", func(t *testing.T) {
+		mustWrite(t, filepath.Join(root, "skills", "one", "SKILL.md"), "one")
+		if err := os.Symlink("one", filepath.Join(root, "skills", "linked")); err != nil {
+			t.Fatal(err)
+		}
+		view, _ := New(root, 1024, false)
+		directories, err := view.ChildDirectories("skills")
+		if err != nil || len(directories) != 2 {
+			t.Fatalf("directories = %#v, err = %v", directories, err)
+		}
+		if directories[0].Logical != "skills/linked" || !directories[0].Symlink || directories[0].Accessible {
+			t.Fatalf("linked directory = %#v", directories[0])
+		}
+		if directories[1].Logical != "skills/one" || directories[1].Symlink || !directories[1].Accessible {
+			t.Fatalf("normal directory = %#v", directories[1])
+		}
+		followed, _ := New(root, 1024, true)
+		directories, err = followed.ChildDirectories("skills")
+		if err != nil || !directories[0].Accessible {
+			t.Fatalf("followed directories = %#v, err = %v", directories, err)
+		}
+	})
 }
 
 func mustWrite(t *testing.T, name, content string) {

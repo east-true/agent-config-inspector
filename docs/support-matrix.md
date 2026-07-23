@@ -51,6 +51,16 @@ Behavioral evidence capabilities:
 | `github-copilot/cli` | Any behavioral case | Unsupported | Static adapter only; no Copilot process is started |
 | Grok, other providers | Any behavioral case | Unsupported | No provider process is started |
 
+Configuration inventory capabilities:
+
+| Provider ID | Surface | Status | Notes |
+|---|---|---|---|
+| `anthropic-claude-code/cli` | Repository Agent Skills | Preview | Target hierarchy `.claude/skills/*/SKILL.md`; directory invocation name; descriptions and bodies hidden |
+| `openai-codex/cli` | Repository Agent Skills | Preview | Target hierarchy `.agents/skills/*/SKILL.md`; Agent Skills name/description baseline validation; descriptions and bodies hidden |
+| Claude Code and Codex CLI | User, admin, system, and plugin skills | Unsupported | Repository-only Phase 8a boundary |
+| Gemini, Kimi, Copilot, Grok, other providers | Agent Skills | Unsupported | No cross-provider compatibility is inferred |
+| All providers | Skill activation and script execution | Unsupported | Inventory never predicts task matching or runs bundled resources |
+
 An opt-in probe is an available measurement mechanism, not a claim that a case has been confirmed for every installed version. Only a successful result with its detected version and fixture digest is `confirmed`.
 
 Output and CI capabilities:
@@ -62,6 +72,7 @@ Output and CI capabilities:
 | Repository `pin` and `verify` | Preview | Canonical repository-only lockfile |
 | Composite GitHub Action | Preview | Verified release download; optional SARIF upload |
 | Behavioral probe plan/result JSON | Preview | Schema v1; raw provider response and credentials omitted |
+| Skills inventory text/JSON | Preview | Independent schema v1; repository-relative paths; metadata content hidden |
 
 Evidence:
 
@@ -78,3 +89,7 @@ Evidence:
 - [GitHub Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
 - [GitHub Copilot custom-instruction surface support](https://docs.github.com/en/copilot/reference/custom-instructions-support)
 - [Behavioral probe contract and evidence registry](behavioral-probes.md)
+- [Agent Skills inventory contract](skills-inventory.md)
+- [Agent Skills specification](https://agentskills.io/specification)
+- [Claude Code skills](https://code.claude.com/docs/en/slash-commands)
+- [OpenAI Build skills](https://learn.chatgpt.com/docs/build-skills.md)

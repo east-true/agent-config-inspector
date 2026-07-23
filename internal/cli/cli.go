@@ -13,6 +13,7 @@ import (
 	"github.com/east-true/agent-config-inspector/internal/probe"
 	"github.com/east-true/agent-config-inspector/internal/provider/registry"
 	"github.com/east-true/agent-config-inspector/internal/report"
+	"github.com/east-true/agent-config-inspector/internal/skills"
 	"github.com/east-true/agent-config-inspector/internal/snapshot"
 	"github.com/east-true/agent-config-inspector/internal/usercontext"
 	"github.com/east-true/agent-config-inspector/internal/workspace"
@@ -76,6 +77,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return runVerify(ctx, scanner, args[1:], stdout, stderr)
 	case "probe":
 		return runProbe(ctx, scanner, args[1:], stdout, stderr)
+	case "inventory":
+		return runInventory(ctx, scanner, args[1:], stdout, stderr)
 	case "matrix":
 		fmt.Fprintln(stderr, "matrix is planned but not implemented in this preview")
 		return exitUnsupported
@@ -87,6 +90,96 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		writeUsage(stderr)
 		return exitUsage
 	}
+}
+
+func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 || args[0] != "skills" {
+		if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+			writeInventoryUsage(stdout)
+			return exitOK
+		}
+		fmt.Fprintln(stderr, "inventory currently requires the skills surface")
+		writeInventoryUsage(stderr)
+		return exitUsage
+	}
+	options, err := parseInventoryOptions(args[1:], stderr)
+	if err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
+		fmt.Fprintln(stderr, err)
+		return exitUsage
+	}
+	service := skills.New(scanner.Registry)
+	reportValue, inventoryErr := service.Inventory(ctx, options.workspace, agentconfig.SkillInventoryOptions{
+		Targets: options.targets, Providers: options.providers, FollowSymlinks: options.followSymlinks, MaxSourceBytes: options.maxSourceBytes,
+	})
+	if inventoryErr != nil {
+		var unsupportedInventory *skills.UnsupportedError
+		var unsupportedProvider *registry.UnsupportedError
+		if errors.As(inventoryErr, &unsupportedInventory) || errors.As(inventoryErr, &unsupportedProvider) {
+			fmt.Fprintln(stderr, inventoryErr)
+			return exitUnsupported
+		}
+		if errors.Is(inventoryErr, workspace.ErrOutsideWorkspace) || errors.Is(inventoryErr, workspace.ErrSymlink) {
+			fmt.Fprintln(stderr, inventoryErr)
+			return exitSafety
+		}
+		fmt.Fprintln(stderr, inventoryErr)
+		return exitIncomplete
+	}
+	if options.format == "json" {
+		err = skills.WriteJSON(stdout, reportValue)
+	} else {
+		err = skills.WriteText(stdout, reportValue)
+	}
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return exitIncomplete
+	}
+	if reachesThreshold(reportValue.Findings, options.failOn) {
+		return exitFinding
+	}
+	if !reportValue.Complete {
+		return exitIncomplete
+	}
+	return exitOK
+}
+
+func parseInventoryOptions(args []string, output io.Writer) (commandOptions, error) {
+	options := commandOptions{workspace: ".", format: "text", maxSourceBytes: 1 << 20, failOn: "error"}
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		options.workspace = args[0]
+		args = args[1:]
+	}
+	flags := flag.NewFlagSet("inventory skills", flag.ContinueOnError)
+	flags.SetOutput(output)
+	flags.Var(&options.providers, "provider", "provider ID or alias; repeatable (claude and codex only)")
+	flags.Var(&options.providers, "providers", "comma-separated provider IDs (claude and codex only)")
+	flags.Var(&options.targets, "target", "workspace-relative launch path; repeatable")
+	flags.Var(&options.targets, "targets", "comma-separated workspace-relative launch paths")
+	flags.StringVar(&options.format, "format", options.format, "text or json")
+	flags.BoolVar(&options.followSymlinks, "follow-workspace-symlinks", false, "follow skill symlinks that remain inside workspace")
+	flags.Int64Var(&options.maxSourceBytes, "max-source-bytes", options.maxSourceBytes, "maximum bytes read from one SKILL.md")
+	flags.StringVar(&options.failOn, "fail-on", options.failOn, "error, warning, or never")
+	if err := flags.Parse(args); err != nil {
+		return options, err
+	}
+	if flags.NArg() > 0 {
+		return options, fmt.Errorf("unexpected positional arguments: %s", strings.Join(flags.Args(), " "))
+	}
+	options.format = strings.ToLower(options.format)
+	options.failOn = strings.ToLower(options.failOn)
+	if options.format != "text" && options.format != "json" {
+		return options, errors.New("--format must be text or json")
+	}
+	if options.maxSourceBytes <= 0 {
+		return options, errors.New("--max-source-bytes must be positive")
+	}
+	if options.failOn != "error" && options.failOn != "warning" && options.failOn != "never" {
+		return options, errors.New("--fail-on must be error, warning, or never")
+	}
+	return options, nil
 }
 
 func runProbe(ctx context.Context, scanner *app.Scanner, args []string, stdout, stderr io.Writer) int {
@@ -511,11 +604,33 @@ func writeUsage(writer io.Writer) {
 		"  agent-config-inspector pin [workspace] --output <file>",
 		"  agent-config-inspector verify [workspace] --snapshot <file>",
 		"  agent-config-inspector probe <provider> [--case <id>] [--execute --acknowledge-quota]",
+		"  agent-config-inspector inventory skills [workspace] [--providers claude,codex] [--target <path>]",
 		"  agent-config-inspector providers list",
 		"  agent-config-inspector providers show <id>",
 		"  agent-config-inspector version",
 		"",
-		"Supported provider aliases: claude, codex, gemini, kimi",
+		"Supported provider aliases: claude, codex, copilot, gemini, kimi",
+	}
+	for _, line := range lines {
+		fmt.Fprintln(writer, line)
+	}
+}
+
+func writeInventoryUsage(writer io.Writer) {
+	lines := []string{
+		"Usage:",
+		"  agent-config-inspector inventory skills [workspace] [options]",
+		"",
+		"Inventories repository-owned Agent Skills without showing descriptions or bodies.",
+		"The selected target represents the provider launch or accessed path.",
+		"",
+		"Options:",
+		"  --provider claude|codex",
+		"  --providers claude,codex",
+		"  --target <workspace-relative-path>",
+		"  --format text|json",
+		"  --fail-on error|warning|never",
+		"  --follow-workspace-symlinks",
 	}
 	for _, line := range lines {
 		fmt.Fprintln(writer, line)

@@ -32,6 +32,11 @@ Current limitations:
 - Provider-managed policy, wrappers, system configuration, CLI version drift, API retries, and service-side behavior can block or alter a probe. Authentication, quota, timeout, and provider failures remain inconclusive rather than becoming negative discovery evidence.
 - Probe response matching is an exact synthetic marker observation in bounded stdout. Provider stdout/stderr are held only in bounded process memory for classification and are not emitted or persisted by the tool.
 - Snapshot verification detects repository and adapter/tool metadata drift but does not semantically classify whether a changed instruction is equivalent.
+- Agent Skills inventory currently supports repository-owned Claude Code and Codex CLI skill directories only. User, admin, system, plugin, `--add-dir`, and `.claude/commands` sources are not scanned.
+- The selected Skills target represents the launch or accessed path. The inventory follows only its root-to-target directory chain and does not observe later arbitrary file access.
+- Skill descriptions and bodies are deliberately hidden. Bundled references, assets, and scripts are not traversed or executed, and automatic activation is never predicted.
+- Claude and Codex provider-specific metadata behavior is modeled conservatively. Full YAML, runtime skill budgets, settings overrides, disabled skills, bundled skills, and selector UI state are not reproduced.
+- Symlinked skill directories are listed but skipped by default. `--follow-workspace-symlinks` follows only links whose resolved target remains inside the selected workspace.
 - The composite GitHub Action requires a published release with matching platform tarballs and `checksums.txt`; branch-only revisions cannot be installed through the Action.
 - Release archives currently target Linux and macOS on amd64 and arm64. Windows packaging is not yet available.
 

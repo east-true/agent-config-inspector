@@ -1,10 +1,11 @@
 package agentconfig
 
-var Version = "0.6.0"
+var Version = "0.7.0-dev"
 
 const (
-	SchemaVersion          = 1
-	AdapterRegistryVersion = "2026-07-24.4"
+	SchemaVersion               = 1
+	AdapterRegistryVersion      = "2026-07-24.5"
+	SkillInventorySchemaVersion = 1
 )
 
 type ProviderIdentity struct {
@@ -148,4 +149,53 @@ type ScanOptions struct {
 	FollowSymlinks     bool
 	MaxSourceBytes     int64
 	MaxImportDepth     int
+}
+
+type SkillInventoryRequest struct {
+	Workspace string   `json:"workspace"`
+	Targets   []string `json:"targets"`
+	Providers []string `json:"providers"`
+}
+
+type SkillRecord struct {
+	Name               string  `json:"name"`
+	DeclaredName       string  `json:"declared_name,omitempty"`
+	DisplayPath        string  `json:"display_path"`
+	ScopeBase          string  `json:"scope_base"`
+	SourceDigest       *Digest `json:"source_digest,omitempty"`
+	SourceBytes        int64   `json:"source_bytes,omitempty"`
+	MetadataStatus     string  `json:"metadata_status"`
+	DescriptionPresent bool    `json:"description_present"`
+	DescriptionBytes   int     `json:"description_bytes,omitempty"`
+	DescriptionDigest  *Digest `json:"description_digest,omitempty"`
+	Reason             string  `json:"reason"`
+}
+
+type SkillInventoryResolution struct {
+	Provider        ProviderIdentity `json:"provider"`
+	Capability      string           `json:"capability"`
+	Target          string           `json:"target"`
+	ProjectRoot     string           `json:"project_root"`
+	State           string           `json:"state"`
+	AvailableSkills []SkillRecord    `json:"available_skills"`
+	ExcludedSkills  []SkillRecord    `json:"excluded_skills"`
+	Evidence        []EvidenceRecord `json:"evidence"`
+	Findings        []Finding        `json:"findings,omitempty"`
+}
+
+type SkillInventoryReport struct {
+	SchemaVersion int                        `json:"schema_version"`
+	Tool          ToolInfo                   `json:"tool"`
+	Request       SkillInventoryRequest      `json:"request"`
+	Privacy       PrivacyInfo                `json:"privacy"`
+	Results       []SkillInventoryResolution `json:"results"`
+	Findings      []Finding                  `json:"findings,omitempty"`
+	Complete      bool                       `json:"complete"`
+}
+
+type SkillInventoryOptions struct {
+	Targets        []string
+	Providers      []string
+	FollowSymlinks bool
+	MaxSourceBytes int64
 }

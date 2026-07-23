@@ -25,6 +25,7 @@ Grok has been deliberately skipped. Copilot coding agent, code review, VS Code, 
 - Resolves Gemini CLI v0.50.0 hierarchical context, configured context filenames, memory boundaries, target-specific JIT context, and bounded `@imports`.
 - Resolves Kimi Code CLI 0.29.0 user and project instruction hierarchy, branded files, lowercase fallback, and soft 32 KiB guidance.
 - Resolves Copilot CLI v1.0.73 standard instruction locations, compatible agent files, path-specific `applyTo` globs, identical-source deduplication, and bounded supported imports.
+- Inventories repository-owned Claude Code and Codex CLI Agent Skills for a selected path without exposing skill descriptions or bodies.
 - Compares normalized instruction units without an LLM or network call.
 - Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
 - Rejects workspace escapes and external imports by default.
@@ -70,6 +71,16 @@ Compare Claude Code and Codex CLI as JSON:
   --target backend/src/users.go \
   --format json
 ```
+
+Inventory repository skills available to Claude Code and Codex CLI:
+
+```bash
+./bin/agent-config-inspector inventory skills . \
+  --providers claude,codex \
+  --target backend/src/users.go
+```
+
+This command inspects only repository-owned `.claude/skills` and `.agents/skills` directories. It does not read user skills or execute skill scripts. See [Skills inventory](docs/skills-inventory.md).
 
 Fail CI when a warning or error is found:
 
@@ -166,6 +177,7 @@ Primary semantics references:
 - [Copilot CLI adapter contract](docs/copilot-cli.md)
 - [Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
 - [Behavioral probe contract and evidence registry](docs/behavioral-probes.md)
+- [Agent Skills inventory contract](docs/skills-inventory.md)
 
 ## Development
 
