@@ -1,6 +1,6 @@
 # Agent Skills inventory
 
-Status: Phase 8a developer preview (`0.7.0-dev`)
+Status: Phase 8a developer preview (`v0.7.0`)
 
 Checked on: 2026-07-24
 

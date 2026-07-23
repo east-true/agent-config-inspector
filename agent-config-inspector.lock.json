@@ -2,7 +2,7 @@
   "schema_version": 1,
   "tool": {
     "name": "agent-config-inspector",
-    "version": "0.7.0-dev"
+    "version": "0.7.0"
   },
   "adapter_registry": "2026-07-24.5",
   "request": {
@@ -111,6 +111,6 @@
   ],
   "lock_digest": {
     "algorithm": "sha256",
-    "value": "5b3f9732a3d25542f0ad0bed6a704a03222ee937cbb3187f6ffeab8b46ff6a0b"
+    "value": "cf2b01ebf002c970eb498c4e4e4fab03b22b15be0794d4e587e8fe89ba2dede2"
   }
 }

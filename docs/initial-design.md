@@ -1,8 +1,8 @@
 # Agent Config Inspector 최초 설계
 
-> 문서 상태: Living design — Phase 8a Agent Skills inventory source implemented, v0.7.0 development
+> 문서 상태: Living design — Phase 8a Agent Skills inventory complete, v0.7.0 released
 >
-> 문서 버전: 0.7.0-draft
+> 문서 버전: 0.7.0
 >
 > 기준일: 2026-07-24
 >
@@ -2193,7 +2193,7 @@ next: simplify the import graph or raise the limit explicitly
 
 ### Phase 8: Skills, agents, MCP inventory와 추가 provider
 
-상태: Phase 8a source 구현 완료, v0.7.0 개발 중
+상태: Phase 8a 완료, v0.7.0에 포함
 
 Phase 8 전체를 한 release에 구현하지 않는다. 2026-07-24에 승인된 첫 단위는
 **Phase 8a: repository Agent Skills inventory**이며 Claude Code와 Codex CLI만 대상으로 한다.

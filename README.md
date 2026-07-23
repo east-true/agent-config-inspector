@@ -112,12 +112,12 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7.0.1
-  - uses: east-true/agent-config-inspector@v0.6.0
+  - uses: east-true/agent-config-inspector@v0.7.0
     with:
       command: verify
       snapshot: agent-config-inspector.lock.json
       fail-on: warning
-      version: v0.6.0
+      version: v0.7.0
       upload-sarif: "true"
 ```
 
