@@ -1,5 +1,5 @@
 name: Agent Config Inspector
-description: Verify Claude Code, Codex CLI, and Gemini CLI repository instruction drift
+description: Verify Claude Code, Codex CLI, Gemini CLI, and Kimi Code CLI repository instruction drift
 author: east-true
 
 branding:

@@ -9,6 +9,7 @@ import (
 	"github.com/east-true/agent-config-inspector/internal/provider/claude"
 	"github.com/east-true/agent-config-inspector/internal/provider/codex"
 	"github.com/east-true/agent-config-inspector/internal/provider/gemini"
+	"github.com/east-true/agent-config-inspector/internal/provider/kimi"
 	"github.com/east-true/agent-config-inspector/pkg/agentconfig"
 )
 
@@ -22,7 +23,7 @@ type UnsupportedError struct{ ID string }
 func (e *UnsupportedError) Error() string { return fmt.Sprintf("unsupported provider %q", e.ID) }
 
 func Builtin() *Registry {
-	items := []provider.Adapter{claude.New(), codex.New(), gemini.New()}
+	items := []provider.Adapter{claude.New(), codex.New(), gemini.New(), kimi.New()}
 	result := &Registry{adapters: make(map[string]provider.Adapter), aliases: make(map[string]string)}
 	for _, item := range items {
 		result.adapters[item.Identity().ID] = item
@@ -32,6 +33,8 @@ func Builtin() *Registry {
 	result.aliases["codex"] = "openai-codex/cli"
 	result.aliases["gemini"] = "google-gemini/cli"
 	result.aliases["gemini-cli"] = "google-gemini/cli"
+	result.aliases["kimi"] = "moonshotai-kimi-code/cli"
+	result.aliases["kimi-code"] = "moonshotai-kimi-code/cli"
 	return result
 }
 

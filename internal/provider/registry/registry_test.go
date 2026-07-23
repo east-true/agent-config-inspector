@@ -11,7 +11,7 @@ import (
 func TestPublicProviderRegistry(t *testing.T) {
 	registry := Builtin()
 	identities := registry.Identities()
-	want := []string{"anthropic-claude-code/cli", "google-gemini/cli", "openai-codex/cli"}
+	want := []string{"anthropic-claude-code/cli", "google-gemini/cli", "moonshotai-kimi-code/cli", "openai-codex/cli"}
 	if len(identities) != len(want) {
 		t.Fatalf("identities = %#v", identities)
 	}
@@ -21,12 +21,24 @@ func TestPublicProviderRegistry(t *testing.T) {
 		}
 	}
 
-	for _, unsupportedID := range []string{"kimi", "grok", "copilot"} {
+	for _, unsupportedID := range []string{"grok", "copilot"} {
 		t.Run("unsupported-"+unsupportedID, func(t *testing.T) {
 			_, err := registry.Get(unsupportedID)
 			var unsupported *UnsupportedError
 			if !errors.As(err, &unsupported) {
 				t.Fatalf("err = %v", err)
+			}
+		})
+	}
+
+	for alias, wantID := range map[string]string{
+		"kimi":      "moonshotai-kimi-code/cli",
+		"kimi-code": "moonshotai-kimi-code/cli",
+	} {
+		t.Run("alias-"+alias, func(t *testing.T) {
+			adapter, err := registry.Get(alias)
+			if err != nil || adapter.Identity().ID != wantID {
+				t.Fatalf("identity = %#v, err = %v", adapter, err)
 			}
 		})
 	}

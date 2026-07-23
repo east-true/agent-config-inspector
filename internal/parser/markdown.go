@@ -22,10 +22,25 @@ type Parsed struct {
 var codeSpan = regexp.MustCompile("`([^`\\n]+)`")
 
 func ParseMarkdown(sourceID string, raw []byte, stripComments bool) Parsed {
+	return parseMarkdown(sourceID, raw, stripComments, true)
+}
+
+// ParsePlainMarkdown preserves a leading YAML-looking block as instruction
+// content. Providers whose instruction files do not define frontmatter use
+// this path so generic Markdown delimiters remain part of the effective text.
+func ParsePlainMarkdown(sourceID string, raw []byte, stripComments bool) Parsed {
+	return parseMarkdown(sourceID, raw, stripComments, false)
+}
+
+func parseMarkdown(sourceID string, raw []byte, stripComments, parseMetadata bool) Parsed {
 	content := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	content = strings.ReplaceAll(content, "\r", "\n")
 	content = strings.TrimPrefix(content, "\ufeff")
-	paths, body := parseFrontmatter(content)
+	var paths []string
+	body := content
+	if parseMetadata {
+		paths, body = parseFrontmatter(content)
+	}
 	if stripComments {
 		body = stripHTMLComments(body)
 	}

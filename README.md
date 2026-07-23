@@ -1,6 +1,6 @@
 # Agent Config Inspector
 
-Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code, Codex CLI, and Gemini CLI receive for a target path, then explains configuration drift without executing repository code.
+Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code, Codex CLI, Gemini CLI, and Kimi Code CLI receive for a target path, then explains configuration drift without executing repository code.
 
 > Status: developer preview. The output is a static prediction of instruction discovery, not proof that a model will follow an instruction.
 
@@ -12,15 +12,17 @@ The current source registry contains:
 
 - `anthropic-claude-code/cli` (`claude` alias)
 - `google-gemini/cli` (`gemini` alias)
+- `moonshotai-kimi-code/cli` (`kimi` alias)
 - `openai-codex/cli` (`codex` alias)
 
-Kimi, Grok, Copilot, and other agents remain separate planned adapters. Requests for them currently fail as unsupported instead of guessing.
+Grok, Copilot, and other agents remain separate planned adapters. Requests for them currently fail as unsupported instead of guessing.
 
 ## Current capabilities
 
 - Resolves root and nested `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, recursive `.claude/rules/**/*.md`, path globs, and bounded `@imports`.
 - Resolves root and nested `AGENTS.override.md`, `AGENTS.md`, Codex fallback filenames, and the combined project instruction byte budget.
 - Resolves Gemini CLI v0.50.0 hierarchical context, configured context filenames, memory boundaries, target-specific JIT context, and bounded `@imports`.
+- Resolves Kimi Code CLI 0.29.0 user and project instruction hierarchy, branded files, lowercase fallback, and soft 32 KiB guidance.
 - Compares normalized instruction units without an LLM or network call.
 - Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
 - Rejects workspace escapes and external imports by default.
@@ -96,12 +98,12 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7.0.1
-  - uses: east-true/agent-config-inspector@v0.3.0
+  - uses: east-true/agent-config-inspector@v0.4.0
     with:
       command: verify
       snapshot: agent-config-inspector.lock.json
       fail-on: warning
-      version: v0.3.0
+      version: v0.4.0
       upload-sarif: "true"
 ```
 
@@ -111,7 +113,7 @@ Inspect the exact provider registry:
 
 ```bash
 ./bin/agent-config-inspector providers list
-./bin/agent-config-inspector providers show gemini
+./bin/agent-config-inspector providers show kimi
 ```
 
 ## Exit codes
@@ -146,6 +148,8 @@ Primary semantics references:
 - [Gemini CLI adapter contract](docs/gemini-cli.md)
 - [Gemini CLI context files](https://geminicli.com/docs/cli/gemini-md/)
 - [Gemini CLI memory import processor](https://geminicli.com/docs/reference/memport/)
+- [Kimi Code CLI adapter contract](docs/kimi-code-cli.md)
+- [Kimi Code CLI 0.29.0 instruction loader](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.29.0/packages/agent-core/src/profile/context.ts)
 
 ## Development
 

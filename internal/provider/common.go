@@ -10,6 +10,14 @@ import (
 )
 
 func ReadMarkdown(view *workspace.View, providerID, logical, kind, reason string, stripComments bool) (agentconfig.Source, error) {
+	return readMarkdown(view, providerID, logical, kind, reason, stripComments, false)
+}
+
+func ReadPlainMarkdown(view *workspace.View, providerID, logical, kind, reason string, stripComments bool) (agentconfig.Source, error) {
+	return readMarkdown(view, providerID, logical, kind, reason, stripComments, true)
+}
+
+func readMarkdown(view *workspace.View, providerID, logical, kind, reason string, stripComments, preserveFrontmatter bool) (agentconfig.Source, error) {
 	id := fmt.Sprintf("%s:%s:%s", providerID, kind, logical)
 	file, err := view.Read(logical)
 	source := agentconfig.Source{
@@ -28,7 +36,12 @@ func ReadMarkdown(view *workspace.View, providerID, logical, kind, reason string
 	if err != nil {
 		return source, err
 	}
-	parsed := parser.ParseMarkdown(id, file.Bytes, stripComments)
+	var parsed parser.Parsed
+	if preserveFrontmatter {
+		parsed = parser.ParsePlainMarkdown(id, file.Bytes, stripComments)
+	} else {
+		parsed = parser.ParseMarkdown(id, file.Bytes, stripComments)
+	}
 	rawDigest := parser.RawContentDigest(file.Bytes)
 	normalizedDigest := parser.ContentDigest(parsed.Normalized)
 	source.RawDigest = &rawDigest
@@ -41,8 +54,21 @@ func ReadMarkdown(view *workspace.View, providerID, logical, kind, reason string
 }
 
 func ReadExternalMarkdown(providerID string, external ExternalSource, reason string, stripComments bool) agentconfig.Source {
+	return readExternalMarkdown(providerID, external, reason, stripComments, false)
+}
+
+func ReadExternalPlainMarkdown(providerID string, external ExternalSource, reason string, stripComments bool) agentconfig.Source {
+	return readExternalMarkdown(providerID, external, reason, stripComments, true)
+}
+
+func readExternalMarkdown(providerID string, external ExternalSource, reason string, stripComments, preserveFrontmatter bool) agentconfig.Source {
 	id := fmt.Sprintf("%s:%s:%s", providerID, external.Kind, external.Label)
-	parsed := parser.ParseMarkdown(id, external.Content, stripComments)
+	var parsed parser.Parsed
+	if preserveFrontmatter {
+		parsed = parser.ParsePlainMarkdown(id, external.Content, stripComments)
+	} else {
+		parsed = parser.ParseMarkdown(id, external.Content, stripComments)
+	}
 	return agentconfig.Source{
 		ID: id, Origin: "user", DisplayPath: external.Label, Kind: external.Kind, ContentVisibility: "hidden",
 		Scope: agentconfig.Scope{Type: "always", Patterns: append([]string(nil), parsed.Paths...), Status: "applies", Reason: reason}, Reason: reason,

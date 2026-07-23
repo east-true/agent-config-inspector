@@ -19,7 +19,7 @@ func TestScanner(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 3 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") {
+		if len(report.Comparisons) != 6 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") {
 			t.Fatalf("report = %#v", report)
 		}
 	})
@@ -43,11 +43,11 @@ func TestScanner(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 3 || !allEquivalent(report.Comparisons) {
+		if len(report.Comparisons) != 6 || !allEquivalent(report.Comparisons) {
 			t.Fatalf("comparisons = %#v", report.Comparisons)
 		}
 	})
-	for _, providerID := range []string{"kimi", "grok", "copilot"} {
+	for _, providerID := range []string{"grok", "copilot"} {
 		t.Run("unsupported provider "+providerID+" is explicit", func(t *testing.T) {
 			_, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{providerID}})
 			if err == nil || !strings.Contains(err.Error(), "unsupported provider") {
@@ -113,6 +113,30 @@ func TestScanner(t *testing.T) {
 		}
 		output := outputBuffer.String()
 		if strings.Contains(output, secret) || strings.Contains(output, privateFileName) || strings.Contains(output, "private-import") || strings.Contains(output, home) || !strings.Contains(output, "<user-instruction-1>") || !strings.Contains(output, `"algorithm": "redacted"`) {
+			t.Fatalf("unsafe output = %s", output)
+		}
+	})
+	t.Run("opted in Kimi user contexts are redacted", func(t *testing.T) {
+		home := t.TempDir()
+		brandRoot := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("KIMI_CODE_HOME", brandRoot)
+		brandSecret := "PRIVATE-KIMI-BRAND-INSTRUCTION"
+		genericSecret := "PRIVATE-KIMI-GENERIC-INSTRUCTION"
+		mustWrite(t, filepath.Join(brandRoot, "AGENTS.md"), brandSecret)
+		mustWrite(t, filepath.Join(home, ".agents", "AGENTS.md"), genericSecret)
+		report, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{
+			Providers: []string{"kimi"}, IncludeUserContext: true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var outputBuffer bytes.Buffer
+		if err := outputreport.WriteJSON(&outputBuffer, report); err != nil {
+			t.Fatal(err)
+		}
+		output := outputBuffer.String()
+		if strings.Contains(output, brandSecret) || strings.Contains(output, genericSecret) || strings.Contains(output, brandRoot) || strings.Contains(output, home) || !strings.Contains(output, "<user-instruction-1>") || !strings.Contains(output, "<user-instruction-2>") || !strings.Contains(output, `"algorithm": "redacted"`) {
 			t.Fatalf("unsafe output = %s", output)
 		}
 	})

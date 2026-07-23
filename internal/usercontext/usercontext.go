@@ -33,9 +33,41 @@ func Load(providerID string, maxSourceBytes int64) ([]provider.ExternalSource, e
 		return loadCodex(home, maxSourceBytes)
 	case "google-gemini/cli":
 		return loadGemini(home, maxSourceBytes)
+	case "moonshotai-kimi-code/cli":
+		return loadKimi(home, maxSourceBytes)
 	default:
 		return nil, fmt.Errorf("user context is unsupported for provider %q", providerID)
 	}
+}
+
+func loadKimi(home string, maxSourceBytes int64) ([]provider.ExternalSource, error) {
+	brandRoot := os.Getenv("KIMI_CODE_HOME")
+	if brandRoot == "" {
+		brandRoot = filepath.Join(home, ".kimi-code")
+	}
+	var result []provider.ExternalSource
+	if content, ok, err := readBoundedUnder(brandRoot, filepath.Join(brandRoot, "AGENTS.md"), maxSourceBytes); err != nil {
+		return nil, err
+	} else if ok && strings.TrimSpace(string(content)) != "" {
+		result = append(result, provider.ExternalSource{
+			Label: "<user-instruction-1>", Kind: "kimi-user-brand-instruction", Content: content,
+		})
+	}
+	genericRoot := filepath.Join(home, ".agents")
+	for _, name := range []string{"AGENTS.md", "agents.md"} {
+		content, ok, err := readBoundedUnder(genericRoot, filepath.Join(genericRoot, name), maxSourceBytes)
+		if err != nil {
+			return nil, err
+		}
+		if !ok || strings.TrimSpace(string(content)) == "" {
+			continue
+		}
+		result = append(result, provider.ExternalSource{
+			Label: fmt.Sprintf("<user-instruction-%d>", len(result)+1), Kind: "kimi-user-generic-instruction", Content: content,
+		})
+		break
+	}
+	return result, nil
 }
 
 func loadGemini(home string, maxSourceBytes int64) ([]provider.ExternalSource, error) {

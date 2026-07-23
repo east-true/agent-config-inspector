@@ -420,7 +420,7 @@ func writeUsage(writer io.Writer) {
 		"  agent-config-inspector providers show <id>",
 		"  agent-config-inspector version",
 		"",
-		"Supported provider aliases: claude, codex, gemini",
+		"Supported provider aliases: claude, codex, gemini, kimi",
 	}
 	for _, line := range lines {
 		fmt.Fprintln(writer, line)

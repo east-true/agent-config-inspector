@@ -59,6 +59,14 @@ func TestParseMarkdown(t *testing.T) {
 	})
 }
 
+func TestPlainMarkdownPreservesFrontmatter(t *testing.T) {
+	raw := []byte("---\npaths:\n  - src/**\n---\nInstruction")
+	parsed := ParsePlainMarkdown("source", raw, false)
+	if len(parsed.Paths) != 0 || !strings.HasPrefix(parsed.Content, "---\npaths:") {
+		t.Fatalf("parsed = %#v", parsed)
+	}
+}
+
 func TestMatchGlob(t *testing.T) {
 	tests := []struct {
 		name    string

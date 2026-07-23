@@ -20,6 +20,7 @@ It does not contain instruction text, an absolute workspace path, account name, 
 - Claude Code: `~/.claude/CLAUDE.md` and Markdown files below `~/.claude/rules/`;
 - Codex CLI: the first non-empty `AGENTS.override.md` or `AGENTS.md` in `$CODEX_HOME` (default `~/.codex`);
 - Gemini CLI: `~/.gemini/settings.json` only to determine safe context filenames, followed by matching non-empty files directly under `~/.gemini/`.
+- Kimi Code CLI: `$KIMI_CODE_HOME/AGENTS.md` (default `~/.kimi-code/AGENTS.md`) and the first non-empty `~/.agents/AGENTS.md` or `~/.agents/agents.md`.
 
 The scanner does not recursively explore arbitrary home directories. User instruction symlinks are not followed.
 

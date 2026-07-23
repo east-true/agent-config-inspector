@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.3.0-dev") {
+		if code != exitOK || !strings.Contains(stdout, "0.4.0-dev") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})
@@ -33,9 +33,22 @@ func TestCLI(t *testing.T) {
 		}
 	})
 	t.Run("unsupported provider", func(t *testing.T) {
-		code, _, stderr := invoke(t, []string{"scan", t.TempDir(), "--provider", "kimi"})
+		code, _, stderr := invoke(t, []string{"scan", t.TempDir(), "--provider", "grok"})
 		if code != exitUnsupported || !strings.Contains(stderr, "unsupported provider") {
 			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("Kimi provider", func(t *testing.T) {
+		root := t.TempDir()
+		if err := os.Mkdir(filepath.Join(root, ".git"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte("Run tests"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := invoke(t, []string{"explain", root, "--provider", "kimi"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "moonshotai-kimi-code/cli") {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
 		}
 	})
 	t.Run("Gemini provider", func(t *testing.T) {
