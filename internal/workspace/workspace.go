@@ -138,6 +138,25 @@ func (v *View) NormalizeTarget(target string) (string, error) {
 	return logical, nil
 }
 
+func (v *View) LogicalFromAbsolute(candidate string) (string, error) {
+	if !filepath.IsAbs(candidate) {
+		return "", ErrInvalidPath
+	}
+	cleaned := filepath.Clean(candidate)
+	relative, err := filepath.Rel(v.root, cleaned)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", ErrOutsideWorkspace
+	}
+	logical, err := cleanLogical(filepath.ToSlash(relative))
+	if err != nil {
+		return "", err
+	}
+	if err := v.checkSymlinkPath(cleaned); err != nil {
+		return "", err
+	}
+	return logical, nil
+}
+
 func (v *View) TargetDirectory(target string) (string, error) {
 	abs, logical, err := v.resolve(target)
 	if err != nil {

@@ -311,7 +311,7 @@ func appendUnique(values []string, candidate string) []string {
 
 func parseAnalysisOptions(command string, args []string, output io.Writer) (commandOptions, error) {
 	options := commandOptions{
-		workspace: ".", format: "text", maxSourceBytes: 1 << 20, maxImportDepth: 4, failOn: "error",
+		workspace: ".", format: "text", maxSourceBytes: 1 << 20, maxImportDepth: 5, failOn: "error",
 		output: "agent-config-inspector.lock.json", snapshot: "agent-config-inspector.lock.json",
 	}
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -328,7 +328,7 @@ func parseAnalysisOptions(command string, args []string, output io.Writer) (comm
 	flags.BoolVar(&options.includeUserContext, "include-user-context", false, "opt in to redacted user-level instructions")
 	flags.BoolVar(&options.followSymlinks, "follow-workspace-symlinks", false, "follow symlinks that remain inside workspace")
 	flags.Int64Var(&options.maxSourceBytes, "max-source-bytes", options.maxSourceBytes, "maximum bytes read from one source")
-	flags.IntVar(&options.maxImportDepth, "max-import-depth", options.maxImportDepth, "maximum Claude import hops, capped at 4")
+	flags.IntVar(&options.maxImportDepth, "max-import-depth", options.maxImportDepth, "maximum context import hops; provider caps apply")
 	flags.StringVar(&options.failOn, "fail-on", options.failOn, "error, warning, or never")
 	if command == "pin" {
 		flags.StringVar(&options.output, "output", options.output, "workspace-relative repository lockfile path")
@@ -350,8 +350,8 @@ func parseAnalysisOptions(command string, args []string, output io.Writer) (comm
 	if options.maxSourceBytes <= 0 {
 		return options, errors.New("--max-source-bytes must be positive")
 	}
-	if options.maxImportDepth <= 0 || options.maxImportDepth > 4 {
-		return options, errors.New("--max-import-depth must be between 1 and 4")
+	if options.maxImportDepth <= 0 || options.maxImportDepth > 5 {
+		return options, errors.New("--max-import-depth must be between 1 and 5")
 	}
 	if options.failOn != "error" && options.failOn != "warning" && options.failOn != "never" {
 		return options, errors.New("--fail-on must be error, warning, or never")
@@ -420,7 +420,7 @@ func writeUsage(writer io.Writer) {
 		"  agent-config-inspector providers show <id>",
 		"  agent-config-inspector version",
 		"",
-		"Supported provider aliases: claude, codex",
+		"Supported provider aliases: claude, codex, gemini",
 	}
 	for _, line := range lines {
 		fmt.Fprintln(writer, line)

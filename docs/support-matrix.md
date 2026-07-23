@@ -16,7 +16,12 @@ Support labels describe only the listed capability. They do not imply model-beha
 | `openai-codex/cli` | Project fallback filenames | Preview | One-line TOML string arrays |
 | `openai-codex/cli` | Project instruction byte budget | Preview | Conservative whole-source exclusion at boundary |
 | `openai-codex/cli` | User instruction | Preview | Explicit opt-in; `CODEX_HOME` respected; safe opaque output |
-| Gemini, Kimi, Grok, Copilot, others | All | Unsupported | Planned as independent later adapters |
+| `google-gemini/cli` | Root and target hierarchy | Preview | v0.50.0 memory boundary to selected target; JIT activation predicted |
+| `google-gemini/cli` | Configured context filenames | Preview | Project `context.fileName`; configured order plus default |
+| `google-gemini/cli` | Memory boundary markers | Preview | Project `context.memoryBoundaryMarkers`; nearest marker wins |
+| `google-gemini/cli` | `@imports` | Preview | In-project relative/absolute imports; five-hop cap; cycle protection |
+| `google-gemini/cli` | User context | Preview | Explicit opt-in; configured filename inventory; imports not expanded |
+| Kimi, Grok, Copilot, others | All | Unsupported | Planned as independent later adapters |
 
 Output and CI capabilities:
 
@@ -29,5 +34,9 @@ Output and CI capabilities:
 
 Evidence:
 
+- [Agent Config Inspector Gemini adapter contract](gemini-cli.md)
 - [Claude Code memory documentation](https://code.claude.com/docs/en/memory)
 - [Codex `AGENTS.md` documentation](https://developers.openai.com/codex/guides/agents-md)
+- [Gemini CLI context-file documentation](https://geminicli.com/docs/cli/gemini-md/)
+- [Gemini CLI memory-import documentation](https://geminicli.com/docs/reference/memport/)
+- [Gemini CLI v0.50.0 settings schema](https://raw.githubusercontent.com/google-gemini/gemini-cli/v0.50.0/schemas/settings.schema.json)

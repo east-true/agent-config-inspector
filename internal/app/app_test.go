@@ -19,7 +19,7 @@ func TestScanner(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 1 || !report.Comparisons[0].Equivalent || hasCode(report.Findings, "ACI002") {
+		if len(report.Comparisons) != 3 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") {
 			t.Fatalf("report = %#v", report)
 		}
 	})
@@ -38,15 +38,16 @@ func TestScanner(t *testing.T) {
 		root := t.TempDir()
 		mustWrite(t, filepath.Join(root, "AGENTS.md"), "Run tests")
 		mustWrite(t, filepath.Join(root, "CLAUDE.md"), "Run tests")
+		mustWrite(t, filepath.Join(root, "GEMINI.md"), "Run tests")
 		report, err := New().Scan(context.Background(), root, agentconfig.ScanOptions{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 1 || !report.Comparisons[0].Equivalent {
+		if len(report.Comparisons) != 3 || !allEquivalent(report.Comparisons) {
 			t.Fatalf("comparisons = %#v", report.Comparisons)
 		}
 	})
-	for _, providerID := range []string{"gemini", "kimi", "grok", "copilot"} {
+	for _, providerID := range []string{"kimi", "grok", "copilot"} {
 		t.Run("unsupported provider "+providerID+" is explicit", func(t *testing.T) {
 			_, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{providerID}})
 			if err == nil || !strings.Contains(err.Error(), "unsupported provider") {
@@ -93,6 +94,37 @@ func TestScanner(t *testing.T) {
 			t.Fatalf("unsafe output = %s", output)
 		}
 	})
+	t.Run("opted in Gemini context and filename are redacted", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		secret := "PRIVATE-GEMINI-INSTRUCTION"
+		privateFileName := "CUSTOM-PRIVATE-CONTEXT.md"
+		mustWrite(t, filepath.Join(home, ".gemini", "settings.json"), `{"context":{"fileName":"`+privateFileName+`"}}`)
+		mustWrite(t, filepath.Join(home, ".gemini", privateFileName), secret+"\n@private-import.md")
+		report, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{
+			Providers: []string{"gemini"}, IncludeUserContext: true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var outputBuffer bytes.Buffer
+		if err := outputreport.WriteJSON(&outputBuffer, report); err != nil {
+			t.Fatal(err)
+		}
+		output := outputBuffer.String()
+		if strings.Contains(output, secret) || strings.Contains(output, privateFileName) || strings.Contains(output, "private-import") || strings.Contains(output, home) || !strings.Contains(output, "<user-instruction-1>") || !strings.Contains(output, `"algorithm": "redacted"`) {
+			t.Fatalf("unsafe output = %s", output)
+		}
+	})
+}
+
+func allEquivalent(comparisons []agentconfig.Comparison) bool {
+	for _, comparison := range comparisons {
+		if !comparison.Equivalent {
+			return false
+		}
+	}
+	return true
 }
 
 func hasCode(findings []agentconfig.Finding, code string) bool {

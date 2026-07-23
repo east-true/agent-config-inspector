@@ -72,6 +72,21 @@ func TestViewBoundaries(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	})
+
+	t.Run("maps only in-workspace absolute paths", func(t *testing.T) {
+		root := t.TempDir()
+		view, err := New(root, 1024, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		logical, err := view.LogicalFromAbsolute(filepath.Join(root, "docs", "context.md"))
+		if err != nil || logical != "docs/context.md" {
+			t.Fatalf("logical = %q, err = %v", logical, err)
+		}
+		if _, err := view.LogicalFromAbsolute(filepath.Join(t.TempDir(), "private.md")); !errors.Is(err, ErrOutsideWorkspace) {
+			t.Fatalf("err = %v", err)
+		}
+	})
 }
 
 func mustWrite(t *testing.T, name, content string) {

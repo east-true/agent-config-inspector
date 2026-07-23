@@ -18,13 +18,16 @@ It does not contain instruction text, an absolute workspace path, account name, 
 `--include-user-context` explicitly permits reads from documented user instruction locations:
 
 - Claude Code: `~/.claude/CLAUDE.md` and Markdown files below `~/.claude/rules/`;
-- Codex CLI: the first non-empty `AGENTS.override.md` or `AGENTS.md` in `$CODEX_HOME` (default `~/.codex`).
+- Codex CLI: the first non-empty `AGENTS.override.md` or `AGENTS.md` in `$CODEX_HOME` (default `~/.codex`);
+- Gemini CLI: `~/.gemini/settings.json` only to determine safe context filenames, followed by matching non-empty files directly under `~/.gemini/`.
 
 The scanner does not recursively explore arbitrary home directories. User instruction symlinks are not followed.
 
 User-source output replaces real paths with opaque labels such as `<user-instruction-1>`. It withholds content, content digest, normalized-unit digest, size, effective digest, and token estimate. Findings are phrased without excerpts.
 
 Even a redacted report can reveal that a local instruction exists or causes a difference. Review it before publication.
+
+Imports referenced by opted-in Gemini user context are detected but never followed. User settings content, configured filenames, import paths, and context-file paths are not emitted.
 
 ## Repository snapshots
 

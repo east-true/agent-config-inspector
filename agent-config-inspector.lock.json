@@ -2,15 +2,16 @@
   "schema_version": 1,
   "tool": {
     "name": "agent-config-inspector",
-    "version": "0.2.0-dev"
+    "version": "0.3.0-dev"
   },
-  "adapter_registry": "2026-07-24",
+  "adapter_registry": "2026-07-24.2",
   "request": {
     "targets": [
       "."
     ],
     "providers": [
       "anthropic-claude-code/cli",
+      "google-gemini/cli",
       "openai-codex/cli"
     ]
   },
@@ -22,6 +23,24 @@
         "version_requirement": "current as of 2026-07-24",
         "support": "preview",
         "depth": "repository-instructions"
+      },
+      "target": ".",
+      "state": "complete",
+      "prediction": "predicted-empty",
+      "included_sources": [],
+      "excluded_sources": [],
+      "effective_repository_digest": {
+        "algorithm": "sha256",
+        "value": "14df4965c05539d5a2ebef2a15708d8006e71ddbc8c9ed18cbbfff16e57e1c77"
+      }
+    },
+    {
+      "provider": {
+        "id": "google-gemini/cli",
+        "adapter_id": "builtin/gemini/v1",
+        "version_requirement": "v0.50.0 semantics checked 2026-07-24",
+        "support": "preview",
+        "depth": "repository-context-files"
       },
       "target": ".",
       "state": "complete",
@@ -54,6 +73,6 @@
   ],
   "lock_digest": {
     "algorithm": "sha256",
-    "value": "ccefc39ff94031fb9916349b1c8f6c3f3bb302480171c46c18525673587499b9"
+    "value": "66a57531170b71ee94186283e51d42f4cea59e3c14a8e7c6499c66ffedabec05"
   }
 }

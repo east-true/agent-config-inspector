@@ -1,24 +1,26 @@
 # Agent Config Inspector
 
-Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code and Codex CLI receive for a target path, then explains configuration drift without executing repository code.
+Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code, Codex CLI, and Gemini CLI receive for a target path, then explains configuration drift without executing repository code.
 
 > Status: developer preview. The output is a static prediction of instruction discovery, not proof that a model will follow an instruction.
 
 ## Why this exists
 
-Coding agents use different filenames, hierarchy rules, imports, and path scopes. A repository can therefore look consistently configured while two agents receive different guidance. Agent Config Inspector makes that difference visible with provenance and conservative findings.
+Coding agents use different filenames, hierarchy rules, imports, and path scopes. A repository can therefore look consistently configured while its agents receive different guidance. Agent Config Inspector makes that difference visible with provenance and conservative findings.
 
-The initial provider registry intentionally contains only:
+The current source registry contains:
 
 - `anthropic-claude-code/cli` (`claude` alias)
+- `google-gemini/cli` (`gemini` alias)
 - `openai-codex/cli` (`codex` alias)
 
-Gemini, Kimi, Grok, Copilot, and other agents are planned as separate, evidence-backed adapters. Requests for them currently fail as unsupported instead of guessing.
+Kimi, Grok, Copilot, and other agents remain separate planned adapters. Requests for them currently fail as unsupported instead of guessing.
 
 ## Current capabilities
 
 - Resolves root and nested `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, recursive `.claude/rules/**/*.md`, path globs, and bounded `@imports`.
 - Resolves root and nested `AGENTS.override.md`, `AGENTS.md`, Codex fallback filenames, and the combined project instruction byte budget.
+- Resolves Gemini CLI v0.50.0 hierarchical context, configured context filenames, memory boundaries, target-specific JIT context, and bounded `@imports`.
 - Compares normalized instruction units without an LLM or network call.
 - Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
 - Rejects workspace escapes and external imports by default.
@@ -41,7 +43,7 @@ No third-party Go module is required for the current core.
 
 ## Quick start
 
-Scan the current repository for both supported providers:
+Scan the current repository for all supported providers:
 
 ```bash
 ./bin/agent-config-inspector scan .
@@ -94,12 +96,12 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7.0.1
-  - uses: east-true/agent-config-inspector@v0.2.0
+  - uses: east-true/agent-config-inspector@v0.3.0
     with:
       command: verify
       snapshot: agent-config-inspector.lock.json
       fail-on: warning
-      version: v0.2.0
+      version: v0.3.0
       upload-sarif: "true"
 ```
 
@@ -109,7 +111,7 @@ Inspect the exact provider registry:
 
 ```bash
 ./bin/agent-config-inspector providers list
-./bin/agent-config-inspector providers show claude
+./bin/agent-config-inspector providers show gemini
 ```
 
 ## Exit codes
@@ -141,6 +143,9 @@ Primary semantics references:
 
 - [Claude Code memory and instruction discovery](https://code.claude.com/docs/en/memory)
 - [Codex `AGENTS.md` guide](https://developers.openai.com/codex/guides/agents-md)
+- [Gemini CLI adapter contract](docs/gemini-cli.md)
+- [Gemini CLI context files](https://geminicli.com/docs/cli/gemini-md/)
+- [Gemini CLI memory import processor](https://geminicli.com/docs/reference/memport/)
 
 ## Development
 

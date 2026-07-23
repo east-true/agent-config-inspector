@@ -1,6 +1,7 @@
 package usercontext
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/east-true/agent-config-inspector/internal/provider"
 )
@@ -29,15 +31,88 @@ func Load(providerID string, maxSourceBytes int64) ([]provider.ExternalSource, e
 		return loadClaude(home, maxSourceBytes)
 	case "openai-codex/cli":
 		return loadCodex(home, maxSourceBytes)
+	case "google-gemini/cli":
+		return loadGemini(home, maxSourceBytes)
 	default:
 		return nil, fmt.Errorf("user context is unsupported for provider %q", providerID)
 	}
 }
 
+func loadGemini(home string, maxSourceBytes int64) ([]provider.ExternalSource, error) {
+	root := filepath.Join(home, ".gemini")
+	fileNames := []string{"GEMINI.md"}
+	if content, ok, err := readBoundedUnder(root, filepath.Join(root, "settings.json"), maxSourceBytes); err != nil {
+		return nil, err
+	} else if ok {
+		var raw struct {
+			Context struct {
+				FileName json.RawMessage `json:"fileName"`
+			} `json:"context"`
+		}
+		if json.Unmarshal(content, &raw) == nil && len(raw.Context.FileName) > 0 {
+			var configured []string
+			var single string
+			if json.Unmarshal(raw.Context.FileName, &single) == nil {
+				configured = []string{single}
+			} else {
+				_ = json.Unmarshal(raw.Context.FileName, &configured)
+			}
+			var safe []string
+			for _, name := range configured {
+				if name, ok := safeDirectFilename(name); ok {
+					safe = appendUnique(safe, name)
+				}
+			}
+			if len(safe) > 0 {
+				fileNames = appendUnique(safe, "GEMINI.md")
+			}
+		}
+	}
+	var result []provider.ExternalSource
+	for _, name := range fileNames {
+		content, ok, err := readBoundedUnder(root, filepath.Join(root, name), maxSourceBytes)
+		if err != nil {
+			return nil, err
+		}
+		if !ok || strings.TrimSpace(string(content)) == "" {
+			continue
+		}
+		result = append(result, provider.ExternalSource{
+			Label: fmt.Sprintf("<user-instruction-%d>", len(result)+1), Kind: "gemini-user-context", Content: content,
+		})
+	}
+	return result, nil
+}
+
+func safeDirectFilename(value string) (string, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" || value == "." || value == ".." || strings.ContainsAny(value, "/\\") || filepath.Base(value) != value {
+		return "", false
+	}
+	if len(value) >= 2 && value[1] == ':' {
+		return "", false
+	}
+	for _, character := range value {
+		if character == 0 || unicode.IsControl(character) {
+			return "", false
+		}
+	}
+	return value, true
+}
+
+func appendUnique(values []string, candidate string) []string {
+	for _, value := range values {
+		if value == candidate {
+			return values
+		}
+	}
+	return append(values, candidate)
+}
+
 func loadClaude(home string, maxSourceBytes int64) ([]provider.ExternalSource, error) {
 	root := filepath.Join(home, ".claude")
 	var result []provider.ExternalSource
-	if content, ok, err := readBounded(filepath.Join(root, "CLAUDE.md"), maxSourceBytes); err != nil {
+	if content, ok, err := readBoundedUnder(root, filepath.Join(root, "CLAUDE.md"), maxSourceBytes); err != nil {
 		return nil, err
 	} else if ok {
 		result = append(result, provider.ExternalSource{Label: "<user-instruction-1>", Kind: "claude-user-memory", Content: content})
@@ -67,7 +142,7 @@ func loadClaude(home string, maxSourceBytes int64) ([]provider.ExternalSource, e
 	}
 	sort.Strings(rulePaths)
 	for index, rulePath := range rulePaths {
-		content, ok, readErr := readBounded(rulePath, maxSourceBytes)
+		content, ok, readErr := readBoundedUnder(root, rulePath, maxSourceBytes)
 		if readErr != nil {
 			return nil, readErr
 		}
@@ -86,7 +161,7 @@ func loadCodex(home string, maxSourceBytes int64) ([]provider.ExternalSource, er
 		root = filepath.Join(home, ".codex")
 	}
 	for _, name := range []string{"AGENTS.override.md", "AGENTS.md"} {
-		content, ok, err := readBounded(filepath.Join(root, name), maxSourceBytes)
+		content, ok, err := readBoundedUnder(root, filepath.Join(root, name), maxSourceBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -119,4 +194,34 @@ func readBounded(candidate string, maxSourceBytes int64) ([]byte, bool, error) {
 		return nil, false, errors.New("cannot read a user instruction source")
 	}
 	return content, true, nil
+}
+
+func readBoundedUnder(root, candidate string, maxSourceBytes int64) ([]byte, bool, error) {
+	root = filepath.Clean(root)
+	candidate = filepath.Clean(candidate)
+	relative, err := filepath.Rel(root, candidate)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return nil, false, &SafetyError{message: "user instruction path escapes its documented directory"}
+	}
+	current := root
+	paths := []string{current}
+	if relative != "." {
+		for _, component := range strings.Split(relative, string(filepath.Separator)) {
+			current = filepath.Join(current, component)
+			paths = append(paths, current)
+		}
+	}
+	for _, checked := range paths {
+		info, statErr := os.Lstat(checked)
+		if errors.Is(statErr, os.ErrNotExist) {
+			break
+		}
+		if statErr != nil {
+			return nil, false, errors.New("cannot inspect a user instruction source")
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil, false, &SafetyError{message: "user instruction symlinks are not followed"}
+		}
+	}
+	return readBounded(candidate, maxSourceBytes)
 }
