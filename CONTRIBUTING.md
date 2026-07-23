@@ -38,6 +38,8 @@ Provider support is capability-specific. Do not label an adapter “full” when
 
 Snapshot or CI-distribution changes must also preserve deterministic canonical JSON, repository-only redaction, safe workspace-relative file handling, strict archive membership, and checksum verification. Run `./scripts/build-release.sh v0.0.0-test <temporary-directory>` when changing release packaging.
 
+Behavioral probe changes must keep plan mode side-effect free, use synthetic generated fixtures, avoid cached-login copying, pass credentials only through documented process-scoped channels, bound and discard raw output, and confirm only the exact measured case. Unit tests must use a fake provider executor; automated test suites must never make real model requests.
+
 ## Pull requests
 
 Keep pull requests focused. Describe the observed or documented behavior, the conservative fallback, and the tests that establish it. Generated golden files must only be updated intentionally and should be reviewable in the diff.

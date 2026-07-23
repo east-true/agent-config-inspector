@@ -15,7 +15,7 @@ The current source registry contains:
 - `moonshotai-kimi-code/cli` (`kimi` alias)
 - `openai-codex/cli` (`codex` alias)
 
-Grok, Copilot, and other agents remain separate planned adapters. Requests for them currently fail as unsupported instead of guessing.
+Grok has been deliberately skipped. Copilot and other agents remain separate planned adapters; requests for them currently fail as unsupported instead of guessing.
 
 ## Current capabilities
 
@@ -30,6 +30,7 @@ Grok, Copilot, and other agents remain separate planned adapters. Requests for t
 - Reads known user-level instruction locations only with `--include-user-context`, then redacts path, content, digest, size, and token estimates.
 - Pins deterministic repository-only lockfiles and verifies pull-request drift.
 - Emits GitHub-compatible SARIF 2.1.0 without external or user-source locations.
+- Offers an opt-in, generated-fixture behavioral probe for one root-discovery claim per released provider; dry-run planning is the default.
 
 ## Build
 
@@ -116,6 +117,14 @@ Inspect the exact provider registry:
 ./bin/agent-config-inspector providers show kimi
 ```
 
+Preview a behavioral probe without starting a provider CLI or making a model request:
+
+```bash
+./bin/agent-config-inspector probe codex
+```
+
+Actual execution requires both `--execute` and `--acknowledge-quota`, uses a documented process-scoped API credential, and may consume quota. Read [Behavioral probes](docs/behavioral-probes.md) before running one.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -124,7 +133,7 @@ Inspect the exact provider registry:
 | 1 | A finding reached `--fail-on` |
 | 2 | Invalid CLI usage or configuration |
 | 3 | Internal error or incomplete result |
-| 4 | Unsupported provider, surface, version, or preview command |
+| 4 | Unsupported provider, surface, version, or probe case |
 | 5 | Safety policy refused the request |
 
 Warnings do not fail by default. Use `--fail-on warning` for a stricter CI policy or `--fail-on never` for an informational run.
@@ -136,6 +145,8 @@ The default scan is local, offline, read-only, repository-scoped, and does not e
 User-level instructions are excluded unless `--include-user-context` is supplied. In that mode, only documented user instruction locations are inventoried and output identifiers remain opaque. See [Privacy](docs/privacy.md) and [Security policy](SECURITY.md) before publishing a report produced with local context.
 
 `pin` and `verify` deliberately refuse `--include-user-context`. A commit-ready lockfile cannot represent user-source existence, paths, content, fingerprints, or token counts.
+
+`probe` is a separate opt-in network path. Its default plan mode does not start a provider or read credentials. Explicit execution uses a synthetic temporary workspace and isolated home, passes only an allowlisted environment, and discards bounded provider output after marker/failure classification. It never probes the selected repository.
 
 ## Accuracy boundary
 
@@ -150,6 +161,7 @@ Primary semantics references:
 - [Gemini CLI memory import processor](https://geminicli.com/docs/reference/memport/)
 - [Kimi Code CLI adapter contract](docs/kimi-code-cli.md)
 - [Kimi Code CLI 0.29.0 instruction loader](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.29.0/packages/agent-core/src/profile/context.ts)
+- [Behavioral probe contract and evidence registry](docs/behavioral-probes.md)
 
 ## Development
 

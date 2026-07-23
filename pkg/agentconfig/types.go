@@ -1,6 +1,6 @@
 package agentconfig
 
-var Version = "0.4.0-dev"
+var Version = "0.5.0-dev"
 
 const (
 	SchemaVersion          = 1

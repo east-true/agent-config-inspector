@@ -1,0 +1,80 @@
+name: Behavioral probe conformance
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider probe to plan or execute
+        required: true
+        default: codex
+        type: choice
+        options:
+          - claude
+          - codex
+          - gemini
+          - kimi
+      execute:
+        description: Make one provider model request after environment approval
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: behavioral-probe-${{ github.ref }}-${{ inputs.provider }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go build -o ./agent-config-inspector ./cmd/agent-config-inspector
+      - name: Print safe probe plan
+        run: ./agent-config-inspector probe "${{ inputs.provider }}" --timeout 5m
+
+  execute:
+    if: ${{ inputs.execute }}
+    needs: plan
+    environment: behavioral-probes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go build -o ./agent-config-inspector ./cmd/agent-config-inspector
+      - name: Execute Claude probe
+        if: ${{ inputs.provider == 'claude' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: ./agent-config-inspector probe claude --execute --acknowledge-quota --timeout 5m --format json
+      - name: Execute Codex probe
+        if: ${{ inputs.provider == 'codex' }}
+        env:
+          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+        run: ./agent-config-inspector probe codex --execute --acknowledge-quota --timeout 5m --format json
+      - name: Execute Gemini probe
+        if: ${{ inputs.provider == 'gemini' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: ./agent-config-inspector probe gemini --execute --acknowledge-quota --timeout 5m --format json
+      - name: Execute Kimi probe
+        if: ${{ inputs.provider == 'kimi' }}
+        env:
+          KIMI_MODEL_NAME: ${{ vars.KIMI_MODEL_NAME }}
+          KIMI_MODEL_API_KEY: ${{ secrets.KIMI_MODEL_API_KEY }}
+        run: ./agent-config-inspector probe kimi --execute --acknowledge-quota --timeout 5m --format json

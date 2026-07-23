@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/east-true/agent-config-inspector/internal/app"
+	"github.com/east-true/agent-config-inspector/internal/probe"
 	"github.com/east-true/agent-config-inspector/internal/provider/registry"
 	"github.com/east-true/agent-config-inspector/internal/report"
 	"github.com/east-true/agent-config-inspector/internal/snapshot"
@@ -72,8 +74,10 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return runPin(ctx, scanner, args[1:], stdout, stderr)
 	case "verify":
 		return runVerify(ctx, scanner, args[1:], stdout, stderr)
-	case "matrix", "probe":
-		fmt.Fprintf(stderr, "%s is planned but not implemented in this preview\n", args[0])
+	case "probe":
+		return runProbe(ctx, scanner, args[1:], stdout, stderr)
+	case "matrix":
+		fmt.Fprintln(stderr, "matrix is planned but not implemented in this preview")
 		return exitUnsupported
 	case "help", "--help", "-h":
 		writeUsage(stdout)
@@ -82,6 +86,96 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "unknown command %q\n\n", args[0])
 		writeUsage(stderr)
 		return exitUsage
+	}
+}
+
+func runProbe(ctx context.Context, scanner *app.Scanner, args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "probe requires one provider ID or alias")
+		writeProbeUsage(stderr)
+		return exitUsage
+	}
+	if args[0] == "--help" || args[0] == "-h" {
+		writeProbeUsage(stdout)
+		return exitOK
+	}
+	adapter, err := scanner.Registry.Get(args[0])
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return exitUnsupported
+	}
+
+	providerID := adapter.Identity().ID
+	caseID := probe.DefaultCaseID
+	format := "text"
+	timeout := 2 * time.Minute
+	execute := false
+	acknowledgeQuota := false
+	flags := flag.NewFlagSet("probe", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	flags.StringVar(&caseID, "case", caseID, "behavioral case ID")
+	flags.StringVar(&format, "format", format, "text or json")
+	flags.DurationVar(&timeout, "timeout", timeout, "provider execution timeout")
+	flags.BoolVar(&execute, "execute", false, "run the provider CLI and make a model request")
+	flags.BoolVar(&acknowledgeQuota, "acknowledge-quota", false, "confirm that the model request may consume quota")
+	if err := flags.Parse(args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
+		return exitUsage
+	}
+	if flags.NArg() > 0 {
+		fmt.Fprintf(stderr, "unexpected positional arguments: %s\n", strings.Join(flags.Args(), " "))
+		return exitUsage
+	}
+	format = strings.ToLower(format)
+	if format != "text" && format != "json" {
+		fmt.Fprintln(stderr, "--format must be text or json")
+		return exitUsage
+	}
+	if timeout < 10*time.Second || timeout > 10*time.Minute {
+		fmt.Fprintln(stderr, "--timeout must be between 10s and 10m")
+		return exitUsage
+	}
+	if acknowledgeQuota && !execute {
+		fmt.Fprintln(stderr, "--acknowledge-quota is only valid with --execute")
+		return exitUsage
+	}
+
+	service := probe.New()
+	plan, planErr := service.Plan(providerID, caseID, timeout)
+	if planErr != nil {
+		fmt.Fprintln(stderr, planErr)
+		return exitUnsupported
+	}
+	if !execute {
+		if err := probe.WritePlan(stdout, plan, format); err != nil {
+			fmt.Fprintln(stderr, err)
+			return exitIncomplete
+		}
+		return exitOK
+	}
+	if err := probe.WritePlan(stderr, plan, "text"); err != nil {
+		fmt.Fprintln(stderr, err)
+		return exitIncomplete
+	}
+	if !acknowledgeQuota {
+		fmt.Fprintln(stderr, "probe execution refused: add --acknowledge-quota after reviewing the plan")
+		return exitSafety
+	}
+
+	result := service.Execute(ctx, providerID, caseID, timeout)
+	if err := probe.WriteResult(stdout, result, format); err != nil {
+		fmt.Fprintln(stderr, err)
+		return exitIncomplete
+	}
+	switch result.Status {
+	case probe.StatusConfirmed:
+		return exitOK
+	case probe.StatusNotObserved:
+		return exitFinding
+	default:
+		return exitIncomplete
 	}
 }
 
@@ -416,11 +510,32 @@ func writeUsage(writer io.Writer) {
 		"  agent-config-inspector diff [workspace] --providers <a,b> --target <path>",
 		"  agent-config-inspector pin [workspace] --output <file>",
 		"  agent-config-inspector verify [workspace] --snapshot <file>",
+		"  agent-config-inspector probe <provider> [--case <id>] [--execute --acknowledge-quota]",
 		"  agent-config-inspector providers list",
 		"  agent-config-inspector providers show <id>",
 		"  agent-config-inspector version",
 		"",
 		"Supported provider aliases: claude, codex, gemini, kimi",
+	}
+	for _, line := range lines {
+		fmt.Fprintln(writer, line)
+	}
+}
+
+func writeProbeUsage(writer io.Writer) {
+	lines := []string{
+		"Usage:",
+		"  agent-config-inspector probe <provider> [options]",
+		"",
+		"By default, probe prints a safe execution plan and makes no model request.",
+		"Actual execution requires both --execute and --acknowledge-quota.",
+		"",
+		"Options:",
+		"  --case root-instruction-discovery",
+		"  --format text|json",
+		"  --timeout 2m",
+		"  --execute",
+		"  --acknowledge-quota",
 	}
 	for _, line := range lines {
 		fmt.Fprintln(writer, line)

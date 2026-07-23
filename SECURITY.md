@@ -37,3 +37,7 @@ The composite GitHub Action downloads release assets only from this repository, 
 `--include-user-context` expands read authority to documented user instruction locations. Those sources remain opaque in output, but the report can still reveal that user context exists and affects a result. Treat such reports as local artifacts unless reviewed.
 
 Static analysis cannot guarantee that an agent will obey an instruction. Instruction files are behavioral context, not an enforcement boundary.
+
+The opt-in `probe` command is a separate boundary from the default scanner. Plan mode starts no provider process. Execution requires both `--execute` and `--acknowledge-quota`, runs only against a generated read-only fixture, isolates provider state in a temporary home, passes an allowlisted environment, and does not emit or retain the provider response. It still executes an installed third-party binary and permits provider-required network access. Verify the binary and avoid execution on machines where managed hooks, wrappers, or system policy are not understood.
+
+Never report a probe issue with a real API key or raw provider response. Include only the sanitized probe result, detected version, fixture digest, operating system, and the smallest synthetic reproduction.

@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.4.0-dev") {
+		if code != exitOK || !strings.Contains(stdout, "0.5.0-dev") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})
@@ -145,6 +145,42 @@ func TestCLI(t *testing.T) {
 		code, _, _ := invoke(t, []string{"pin", t.TempDir(), "--output", "../outside.lock.json"})
 		if code != exitSafety {
 			t.Fatalf("code = %d", code)
+		}
+	})
+	t.Run("probe defaults to plan only", func(t *testing.T) {
+		code, stdout, stderr := invoke(t, []string{"probe", "codex", "--timeout", "30s"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Behavioral probe plan") || !strings.Contains(stdout, "Expected model calls: 1") {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("probe plan supports unavailable provider binary", func(t *testing.T) {
+		code, stdout, stderr := invoke(t, []string{"probe", "kimi", "--format", "json"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, `"kind": "probe-plan"`) || !strings.Contains(stdout, `"binary_available": false`) {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("probe execution requires quota acknowledgement", func(t *testing.T) {
+		code, stdout, stderr := invoke(t, []string{"probe", "codex", "--execute"})
+		if code != exitSafety || stdout != "" || !strings.Contains(stderr, "Behavioral probe plan") || !strings.Contains(stderr, "--acknowledge-quota") {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("probe rejects unused quota acknowledgement", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"probe", "codex", "--acknowledge-quota"})
+		if code != exitUsage || !strings.Contains(stderr, "only valid with --execute") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("probe rejects unsupported case", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"probe", "claude", "--case", "nested-precedence"})
+		if code != exitUnsupported || !strings.Contains(stderr, "unsupported probe case") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("probe keeps Grok unsupported", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"probe", "grok"})
+		if code != exitUnsupported || !strings.Contains(stderr, "unsupported provider") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
 		}
 	})
 }

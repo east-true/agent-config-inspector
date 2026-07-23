@@ -51,6 +51,21 @@ SARIF uses the same boundary. Only validated repository-relative paths can becom
 
 Repository instructions that import an absolute path, `~` path, or relative path outside the workspace are rejected by default. The external path is represented as `<external-import>` and its bytes are not read. Imports originating inside opted-in user instructions are inventoried but not expanded in the preview.
 
+## Behavioral probe opt-in
+
+`probe` does not share the scanner's offline execution path. Plan mode is the default and performs only provider registry resolution plus executable discovery on `PATH`; it does not start the executable, create a fixture, inspect credentials, or use the network.
+
+`--execute --acknowledge-quota` authorizes one generated-fixture provider run. The probe creates a temporary home and repository, never copies the real provider home, and passes a new environment containing only basic process variables, documented proxy/TLS variables, provider-specific endpoint variables, and the required process-scoped credential. Unrelated parent variables do not cross this boundary.
+
+Provider stdout and stderr are bounded in memory, checked for the synthetic marker and a small set of failure signals, and discarded. Text and JSON results can contain:
+
+- the provider ID, case, synthetic fixture digest, and documented safe invocation shape;
+- executable availability, detected CLI version, process/exit state, and output-truncation state;
+- marker observation, terminal classification, and failure stage;
+- credential variable names, never their values.
+
+Results do not contain the marker, prompt, instruction text, response body, temporary path, real home path, account identity, credential value, hostname, or timestamp. The tool does not automatically write a result file or upload an artifact. Provider services may retain requests according to their own account and data policies; that external retention is outside this repository's control.
+
 ## Non-goals
 
-Redaction is not a data-loss-prevention system and does not inspect arbitrary output produced by downstream tools. A caller can still mishandle the local workspace or report after this process exits.
+Redaction is not a data-loss-prevention system and does not inspect arbitrary output produced by downstream tools. A caller can still mishandle the local workspace or report after this process exits. A substituted provider binary or local wrapper can behave differently from the documented CLI, so verify executable provenance before opting into a probe.

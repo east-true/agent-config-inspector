@@ -27,7 +27,20 @@ Support labels describe only the listed capability. They do not imply model-beha
 | `moonshotai-kimi-code/cli` | User instructions | Preview | Explicit opt-in; `KIMI_CODE_HOME` and generic `.agents` scope; opaque output |
 | `moonshotai-kimi-code/cli` | 32 KiB guidance | Preview | Full content retained; warning threshold modeled conservatively |
 | `moonshotai-kimi-code/cli` | Custom agents and `SYSTEM.md` | Unsupported | Runtime selection can replace default prompt injection |
-| Grok, Copilot, others | All | Unsupported | Planned as independent later adapters |
+| Grok | All | Unsupported | Deliberately skipped; no compatibility is inferred |
+| Copilot, others | All | Unsupported | Planned as independent later adapters |
+
+Behavioral evidence capabilities:
+
+| Provider ID | Case | Status | Notes |
+|---|---|---|---|
+| `anthropic-claude-code/cli` | Root `CLAUDE.md` discovery | Opt-in probe | Generated fixture; process API key; tools and MCP disabled |
+| `openai-codex/cli` | Root `AGENTS.md` discovery | Opt-in probe | Generated fixture; ephemeral exec; read-only sandbox |
+| `google-gemini/cli` | Root `GEMINI.md` discovery | Opt-in probe | Generated fixture; empty core-tool allowlist; extensions disabled |
+| `moonshotai-kimi-code/cli` | Root `AGENTS.md` discovery | Opt-in probe | Generated fixture; isolated config; tools disabled |
+| Grok, Copilot, others | Any behavioral case | Unsupported | No provider process is started |
+
+An opt-in probe is an available measurement mechanism, not a claim that a case has been confirmed for every installed version. Only a successful result with its detected version and fixture digest is `confirmed`.
 
 Output and CI capabilities:
 
@@ -37,6 +50,7 @@ Output and CI capabilities:
 | SARIF 2.1.0 | Preview | Repository-relative locations only |
 | Repository `pin` and `verify` | Preview | Canonical repository-only lockfile |
 | Composite GitHub Action | Preview | Verified release download; optional SARIF upload |
+| Behavioral probe plan/result JSON | Preview | Schema v1; raw provider response and credentials omitted |
 
 Evidence:
 
@@ -49,3 +63,4 @@ Evidence:
 - [Agent Config Inspector Kimi adapter contract](kimi-code-cli.md)
 - [Kimi Code CLI 0.29.0 instruction loader](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.29.0/packages/agent-core/src/profile/context.ts)
 - [Kimi Code CLI agents and instruction files](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents.html)
+- [Behavioral probe contract and evidence registry](behavioral-probes.md)

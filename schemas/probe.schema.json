@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/east-true/agent-config-inspector/schemas/probe.schema.json",
+  "title": "Agent Config Inspector behavioral probe output",
+  "oneOf": [
+    { "$ref": "#/$defs/plan" },
+    { "$ref": "#/$defs/result" }
+  ],
+  "$defs": {
+    "digest": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "provider",
+        "case",
+        "claim",
+        "binary",
+        "binary_available",
+        "invocation",
+        "fixture",
+        "fixture_digest",
+        "filesystem_mode",
+        "network",
+        "timeout_seconds",
+        "expected_model_calls",
+        "may_consume_quota",
+        "raw_response_retention",
+        "credential_mode",
+        "credential_variables",
+        "evidence_url"
+      ],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "kind": { "const": "probe-plan" },
+        "provider": {
+          "enum": [
+            "anthropic-claude-code/cli",
+            "google-gemini/cli",
+            "moonshotai-kimi-code/cli",
+            "openai-codex/cli"
+          ]
+        },
+        "case": { "const": "root-instruction-discovery" },
+        "claim": { "type": "string", "minLength": 1 },
+        "binary": { "enum": ["claude", "codex", "gemini", "kimi"] },
+        "binary_available": { "type": "boolean" },
+        "invocation": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string" }
+        },
+        "fixture": { "const": "generated-minimal-fixture-only" },
+        "fixture_digest": { "$ref": "#/$defs/digest" },
+        "filesystem_mode": { "const": "read-only generated workspace" },
+        "network": { "const": "provider-required access only; agent network tools disabled or denied" },
+        "timeout_seconds": { "type": "integer", "minimum": 10, "maximum": 600 },
+        "expected_model_calls": { "const": 1 },
+        "may_consume_quota": { "const": true },
+        "raw_response_retention": { "const": "none" },
+        "credential_mode": { "type": "string", "minLength": 1 },
+        "credential_variables": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+        },
+        "evidence_url": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "plan",
+        "status",
+        "marker_observed",
+        "provider_process_started",
+        "output_truncated"
+      ],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "kind": { "const": "probe-result" },
+        "plan": { "$ref": "#/$defs/plan" },
+        "status": {
+          "enum": [
+            "confirmed",
+            "not-observed",
+            "blocked-before-model-call",
+            "quota-exhausted",
+            "auth-unavailable",
+            "provider-error",
+            "inconclusive"
+          ]
+        },
+        "failure_stage": {
+          "enum": [
+            "planning",
+            "binary-detection",
+            "fixture-preparation",
+            "credential-check",
+            "provider-execution",
+            "fixture-integrity",
+            "fixture-cleanup",
+            "marker-evaluation"
+          ]
+        },
+        "detected_version": { "type": "string", "maxLength": 200 },
+        "marker_observed": { "type": "boolean" },
+        "provider_process_started": { "type": "boolean" },
+        "provider_exit_code": { "type": "integer" },
+        "output_truncated": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
