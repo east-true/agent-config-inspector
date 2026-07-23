@@ -261,9 +261,6 @@ func (v *View) WalkFiles(logicalDir string, accept func(string, fs.DirEntry) boo
 			return nil
 		}
 		if entry.Type()&os.ModeSymlink != 0 {
-			if !v.followSymlinks {
-				return nil
-			}
 			rel, relErr := filepath.Rel(abs, p)
 			if relErr != nil {
 				return relErr

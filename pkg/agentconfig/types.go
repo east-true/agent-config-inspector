@@ -1,11 +1,12 @@
 package agentconfig
 
-var Version = "0.7.0"
+var Version = "0.8.0-dev"
 
 const (
 	SchemaVersion               = 1
-	AdapterRegistryVersion      = "2026-07-24.5"
+	AdapterRegistryVersion      = "2026-07-24.6"
 	SkillInventorySchemaVersion = 1
+	AgentInventorySchemaVersion = 1
 )
 
 type ProviderIdentity struct {
@@ -194,6 +195,59 @@ type SkillInventoryReport struct {
 }
 
 type SkillInventoryOptions struct {
+	Targets        []string
+	Providers      []string
+	FollowSymlinks bool
+	MaxSourceBytes int64
+}
+
+type AgentInventoryRequest struct {
+	Workspace string   `json:"workspace"`
+	Targets   []string `json:"targets"`
+	Providers []string `json:"providers"`
+}
+
+type AgentRecord struct {
+	Name                 string   `json:"name"`
+	DisplayPath          string   `json:"display_path"`
+	ScopeBase            string   `json:"scope_base"`
+	Format               string   `json:"format"`
+	SourceDigest         *Digest  `json:"source_digest,omitempty"`
+	SourceBytes          int64    `json:"source_bytes,omitempty"`
+	MetadataStatus       string   `json:"metadata_status"`
+	DescriptionPresent   bool     `json:"description_present"`
+	DescriptionBytes     int      `json:"description_bytes,omitempty"`
+	DescriptionDigest    *Digest  `json:"description_digest,omitempty"`
+	InstructionsPresent  bool     `json:"instructions_present"`
+	InstructionsBytes    int      `json:"instructions_bytes,omitempty"`
+	InstructionsDigest   *Digest  `json:"instructions_digest,omitempty"`
+	DeclaredCapabilities []string `json:"declared_capabilities,omitempty"`
+	Reason               string   `json:"reason"`
+}
+
+type AgentInventoryResolution struct {
+	Provider        ProviderIdentity `json:"provider"`
+	Capability      string           `json:"capability"`
+	Target          string           `json:"target"`
+	ProjectRoot     string           `json:"project_root"`
+	State           string           `json:"state"`
+	AvailableAgents []AgentRecord    `json:"available_agents"`
+	ExcludedAgents  []AgentRecord    `json:"excluded_agents"`
+	Evidence        []EvidenceRecord `json:"evidence"`
+	Findings        []Finding        `json:"findings,omitempty"`
+}
+
+type AgentInventoryReport struct {
+	SchemaVersion int                        `json:"schema_version"`
+	Tool          ToolInfo                   `json:"tool"`
+	Request       AgentInventoryRequest      `json:"request"`
+	Privacy       PrivacyInfo                `json:"privacy"`
+	Results       []AgentInventoryResolution `json:"results"`
+	Findings      []Finding                  `json:"findings,omitempty"`
+	Complete      bool                       `json:"complete"`
+}
+
+type AgentInventoryOptions struct {
 	Targets        []string
 	Providers      []string
 	FollowSymlinks bool

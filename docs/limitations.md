@@ -37,6 +37,12 @@ Current limitations:
 - Skill descriptions and bodies are deliberately hidden. Bundled references, assets, and scripts are not traversed or executed, and automatic activation is never predicted.
 - Claude and Codex provider-specific metadata behavior is modeled conservatively. Full YAML, runtime skill budgets, settings overrides, disabled skills, bundled skills, and selector UI state are not reproduced.
 - Symlinked skill directories are listed but skipped by default. `--follow-workspace-symlinks` follows only links whose resolved target remains inside the selected workspace.
+- Custom agents inventory currently supports repository-owned Claude Code `.claude/agents/**/*.md` and Codex CLI `.codex/agents/**/*.toml` files only. Personal, managed, plugin, built-in, session, and CLI-provided definitions are not read.
+- Codex standalone agent discovery follows the selected target's project configuration hierarchy under a trust assumption. Installed-version drift, feature state, custom project-root markers, disabled layers, `[agents.*]` declarations, and explicit `config_file` roles are not merged.
+- Claude same-scope duplicate names remain partial because documented selection follows filesystem order. Codex same-layer duplicates mirror the current source's sorted-first selection but runtime behavior can drift by version.
+- Agent descriptions, prompts, and every tool/model/MCP/permission value are hidden. Names, repository-relative paths, byte counts, and unkeyed content digests remain report metadata and should be reviewed before publishing output from a private repository.
+- Agent inventory never predicts task matching, automatic delegation, permission effectiveness, tool availability, model behavior, or prompt compliance, and it never starts an agent or provider CLI.
+- Direct agent-file symlinks are listed but skipped by default. Opt-in following is limited to files whose resolved target remains inside the workspace; symlinked agent directories are not recursively traversed.
 - The composite GitHub Action requires a published release with matching platform tarballs and `checksums.txt`; branch-only revisions cannot be installed through the Action.
 - Release archives currently target Linux and macOS on amd64 and arm64. Windows packaging is not yet available.
 

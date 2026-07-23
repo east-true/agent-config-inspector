@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	agentinventory "github.com/east-true/agent-config-inspector/internal/agents"
 	"github.com/east-true/agent-config-inspector/internal/app"
 	"github.com/east-true/agent-config-inspector/internal/probe"
 	"github.com/east-true/agent-config-inspector/internal/provider/registry"
@@ -93,16 +94,26 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 }
 
 func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdout, stderr io.Writer) int {
-	if len(args) == 0 || args[0] != "skills" {
-		if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-			writeInventoryUsage(stdout)
-			return exitOK
-		}
-		fmt.Fprintln(stderr, "inventory currently requires the skills surface")
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "inventory requires the skills or agents surface")
 		writeInventoryUsage(stderr)
 		return exitUsage
 	}
-	options, err := parseInventoryOptions(args[1:], stderr)
+	if args[0] == "--help" || args[0] == "-h" {
+		writeInventoryUsage(stdout)
+		return exitOK
+	}
+	surface := args[0]
+	if surface != "skills" && surface != "agents" {
+		if surface == "help" {
+			writeInventoryUsage(stdout)
+			return exitOK
+		}
+		fmt.Fprintf(stderr, "unsupported inventory surface %q\n", surface)
+		writeInventoryUsage(stderr)
+		return exitUsage
+	}
+	options, err := parseInventoryOptions(surface, args[1:], stderr)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
@@ -110,14 +121,44 @@ func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdo
 		fmt.Fprintln(stderr, err)
 		return exitUsage
 	}
-	service := skills.New(scanner.Registry)
-	reportValue, inventoryErr := service.Inventory(ctx, options.workspace, agentconfig.SkillInventoryOptions{
-		Targets: options.targets, Providers: options.providers, FollowSymlinks: options.followSymlinks, MaxSourceBytes: options.maxSourceBytes,
-	})
+	var inventoryErr, writeErr error
+	var findings []agentconfig.Finding
+	complete := false
+	switch surface {
+	case "skills":
+		service := skills.New(scanner.Registry)
+		reportValue, serviceErr := service.Inventory(ctx, options.workspace, agentconfig.SkillInventoryOptions{
+			Targets: options.targets, Providers: options.providers, FollowSymlinks: options.followSymlinks, MaxSourceBytes: options.maxSourceBytes,
+		})
+		inventoryErr = serviceErr
+		if inventoryErr == nil {
+			findings, complete = reportValue.Findings, reportValue.Complete
+			if options.format == "json" {
+				writeErr = skills.WriteJSON(stdout, reportValue)
+			} else {
+				writeErr = skills.WriteText(stdout, reportValue)
+			}
+		}
+	case "agents":
+		service := agentinventory.New(scanner.Registry)
+		reportValue, serviceErr := service.Inventory(ctx, options.workspace, agentconfig.AgentInventoryOptions{
+			Targets: options.targets, Providers: options.providers, FollowSymlinks: options.followSymlinks, MaxSourceBytes: options.maxSourceBytes,
+		})
+		inventoryErr = serviceErr
+		if inventoryErr == nil {
+			findings, complete = reportValue.Findings, reportValue.Complete
+			if options.format == "json" {
+				writeErr = agentinventory.WriteJSON(stdout, reportValue)
+			} else {
+				writeErr = agentinventory.WriteText(stdout, reportValue)
+			}
+		}
+	}
 	if inventoryErr != nil {
 		var unsupportedInventory *skills.UnsupportedError
+		var unsupportedAgentInventory *agentinventory.UnsupportedError
 		var unsupportedProvider *registry.UnsupportedError
-		if errors.As(inventoryErr, &unsupportedInventory) || errors.As(inventoryErr, &unsupportedProvider) {
+		if errors.As(inventoryErr, &unsupportedInventory) || errors.As(inventoryErr, &unsupportedAgentInventory) || errors.As(inventoryErr, &unsupportedProvider) {
 			fmt.Fprintln(stderr, inventoryErr)
 			return exitUnsupported
 		}
@@ -128,39 +169,34 @@ func runInventory(ctx context.Context, scanner *app.Scanner, args []string, stdo
 		fmt.Fprintln(stderr, inventoryErr)
 		return exitIncomplete
 	}
-	if options.format == "json" {
-		err = skills.WriteJSON(stdout, reportValue)
-	} else {
-		err = skills.WriteText(stdout, reportValue)
-	}
-	if err != nil {
-		fmt.Fprintln(stderr, err)
+	if writeErr != nil {
+		fmt.Fprintln(stderr, writeErr)
 		return exitIncomplete
 	}
-	if reachesThreshold(reportValue.Findings, options.failOn) {
+	if reachesThreshold(findings, options.failOn) {
 		return exitFinding
 	}
-	if !reportValue.Complete {
+	if !complete {
 		return exitIncomplete
 	}
 	return exitOK
 }
 
-func parseInventoryOptions(args []string, output io.Writer) (commandOptions, error) {
+func parseInventoryOptions(surface string, args []string, output io.Writer) (commandOptions, error) {
 	options := commandOptions{workspace: ".", format: "text", maxSourceBytes: 1 << 20, failOn: "error"}
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		options.workspace = args[0]
 		args = args[1:]
 	}
-	flags := flag.NewFlagSet("inventory skills", flag.ContinueOnError)
+	flags := flag.NewFlagSet("inventory "+surface, flag.ContinueOnError)
 	flags.SetOutput(output)
 	flags.Var(&options.providers, "provider", "provider ID or alias; repeatable (claude and codex only)")
 	flags.Var(&options.providers, "providers", "comma-separated provider IDs (claude and codex only)")
 	flags.Var(&options.targets, "target", "workspace-relative launch path; repeatable")
 	flags.Var(&options.targets, "targets", "comma-separated workspace-relative launch paths")
 	flags.StringVar(&options.format, "format", options.format, "text or json")
-	flags.BoolVar(&options.followSymlinks, "follow-workspace-symlinks", false, "follow skill symlinks that remain inside workspace")
-	flags.Int64Var(&options.maxSourceBytes, "max-source-bytes", options.maxSourceBytes, "maximum bytes read from one SKILL.md")
+	flags.BoolVar(&options.followSymlinks, "follow-workspace-symlinks", false, "follow source symlinks that remain inside workspace")
+	flags.Int64Var(&options.maxSourceBytes, "max-source-bytes", options.maxSourceBytes, "maximum bytes read from one inventory source")
 	flags.StringVar(&options.failOn, "fail-on", options.failOn, "error, warning, or never")
 	if err := flags.Parse(args); err != nil {
 		return options, err
@@ -605,6 +641,7 @@ func writeUsage(writer io.Writer) {
 		"  agent-config-inspector verify [workspace] --snapshot <file>",
 		"  agent-config-inspector probe <provider> [--case <id>] [--execute --acknowledge-quota]",
 		"  agent-config-inspector inventory skills [workspace] [--providers claude,codex] [--target <path>]",
+		"  agent-config-inspector inventory agents [workspace] [--providers claude,codex] [--target <path>]",
 		"  agent-config-inspector providers list",
 		"  agent-config-inspector providers show <id>",
 		"  agent-config-inspector version",
@@ -620,8 +657,9 @@ func writeInventoryUsage(writer io.Writer) {
 	lines := []string{
 		"Usage:",
 		"  agent-config-inspector inventory skills [workspace] [options]",
+		"  agent-config-inspector inventory agents [workspace] [options]",
 		"",
-		"Inventories repository-owned Agent Skills without showing descriptions or bodies.",
+		"Inventories repository-owned Agent Skills or custom agents without showing sensitive bodies.",
 		"The selected target represents the provider launch or accessed path.",
 		"",
 		"Options:",

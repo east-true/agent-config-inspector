@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.7.0") {
+		if code != exitOK || !strings.Contains(stdout, "0.8.0-dev") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})
@@ -216,6 +216,32 @@ func TestCLI(t *testing.T) {
 	t.Run("skill inventory refuses workspace escape", func(t *testing.T) {
 		code, _, stderr := invoke(t, []string{"inventory", "skills", t.TempDir(), "--target", "../outside"})
 		if code != exitSafety || stderr == "" {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("agent inventory hides prompts and configuration values", func(t *testing.T) {
+		root := t.TempDir()
+		agentDir := filepath.Join(root, ".codex", "agents")
+		if err := os.MkdirAll(agentDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		content := "name = 'reviewer'\ndescription = 'PRIVATE_AGENT_DESCRIPTION'\ndeveloper_instructions = 'PRIVATE_AGENT_PROMPT'\nmodel = 'PRIVATE_MODEL_VALUE'\n"
+		if err := os.WriteFile(filepath.Join(agentDir, "reviewer.toml"), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := invoke(t, []string{"inventory", "agents", root, "--provider", "codex", "--format", "json"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, `"available_agents"`) || !strings.Contains(stdout, `"name": "reviewer"`) {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+		for _, secret := range []string{"PRIVATE_AGENT_DESCRIPTION", "PRIVATE_AGENT_PROMPT", "PRIVATE_MODEL_VALUE", root} {
+			if strings.Contains(stdout, secret) {
+				t.Fatalf("inventory leaked %q: %s", secret, stdout)
+			}
+		}
+	})
+	t.Run("agent inventory rejects unsupported provider", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"inventory", "agents", t.TempDir(), "--provider", "gemini"})
+		if code != exitUnsupported || !strings.Contains(stderr, "agent inventory is not supported") {
 			t.Fatalf("code = %d, stderr = %q", code, stderr)
 		}
 	})

@@ -60,6 +60,12 @@ Configuration inventory capabilities:
 | Claude Code and Codex CLI | User, admin, system, and plugin skills | Unsupported | Repository-only Phase 8a boundary |
 | Gemini, Kimi, Copilot, Grok, other providers | Agent Skills | Unsupported | No cross-provider compatibility is inferred |
 | All providers | Skill activation and script execution | Unsupported | Inventory never predicts task matching or runs bundled resources |
+| `anthropic-claude-code/cli` | Repository custom agents | Preview | Target hierarchy `.claude/agents/**/*.md`; closest scope wins; same-scope duplicate names remain ambiguous; prompts and configuration values hidden |
+| `openai-codex/cli` | Repository custom agents | Preview | Trusted target hierarchy `.codex/agents/**/*.toml`; closest layer wins; same-layer sorted selection; prompts and configuration values hidden |
+| Claude Code and Codex CLI | Personal, managed, plugin, built-in, and session agents | Unsupported | Repository-only Phase 8b boundary |
+| Codex CLI | `[agents.*]` declarations and explicit `config_file` roles | Unsupported | Standalone project agent files only |
+| Gemini, Kimi, Copilot, Grok, other providers | Custom agents | Unsupported | Similar formats or names do not imply compatibility |
+| All providers | Agent selection, delegation, and execution | Unsupported | Inventory never starts a provider or predicts runtime selection |
 
 An opt-in probe is an available measurement mechanism, not a claim that a case has been confirmed for every installed version. Only a successful result with its detected version and fixture digest is `confirmed`.
 
@@ -73,6 +79,7 @@ Output and CI capabilities:
 | Composite GitHub Action | Preview | Verified release download; optional SARIF upload |
 | Behavioral probe plan/result JSON | Preview | Schema v1; raw provider response and credentials omitted |
 | Skills inventory text/JSON | Preview | Independent schema v1; repository-relative paths; metadata content hidden |
+| Custom agents inventory text/JSON | Preview | Independent schema v1; repository-relative paths; prompts and configuration values hidden |
 
 Evidence:
 
@@ -93,3 +100,7 @@ Evidence:
 - [Agent Skills specification](https://agentskills.io/specification)
 - [Claude Code skills](https://code.claude.com/docs/en/slash-commands)
 - [OpenAI Build skills](https://learn.chatgpt.com/docs/build-skills.md)
+- [Custom agents inventory contract](agents-inventory.md)
+- [Claude Code subagents](https://code.claude.com/docs/en/sub-agents)
+- [OpenAI Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents.md)
+- [OpenAI Codex custom-agent loader](https://github.com/openai/codex/blob/main/codex-rs/core/src/config/agent_roles.rs)

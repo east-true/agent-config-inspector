@@ -48,6 +48,16 @@ Building a lockfile from an internal report filters user sources before calculat
 
 SARIF uses the same boundary. Only validated repository-relative paths can become SARIF locations; external and opaque user labels are omitted.
 
+## Repository configuration inventories
+
+`inventory skills` and `inventory agents` are repository-only surfaces. They do not offer `--include-user-context` and do not read personal, admin, managed, plugin, built-in, or session definitions.
+
+Skills output hides descriptions and `SKILL.md` bodies. Custom-agent output hides descriptions, Markdown prompts, `developer_instructions`, and all model, tool, MCP, hook, permission, command, URL, and environment values. The agent parser emits only an allowlisted set of capability field names and ignores arbitrary unknown metadata in output.
+
+Inventory reports can still contain repository-relative paths, names, byte counts, and unkeyed domain-separated SHA-256 digests. These are fingerprints and repository metadata, not encryption or anonymization. Review them before publishing output from a private repository; do not publish when even filenames, agent names, or equality testing against a known candidate value would be sensitive.
+
+Neither inventory traverses supporting executable resources or starts a provider. Direct source symlinks are skipped by default. Opt-in following is limited to resolved files inside the selected workspace, and absolute targets are never printed.
+
 ## External imports
 
 Repository instructions that import an absolute path, `~` path, or relative path outside the workspace are rejected by default. The external path is represented as `<external-import>` and its bytes are not read. Imports originating inside opted-in user instructions are inventoried but not expanded in the preview.
