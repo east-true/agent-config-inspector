@@ -24,6 +24,8 @@ Gemini, Kimi, Grok, Copilot, and other agents are planned as separate, evidence-
 - Rejects workspace escapes and external imports by default.
 - Hides instruction contents and absolute workspace paths in text and JSON output.
 - Reads known user-level instruction locations only with `--include-user-context`, then redacts path, content, digest, size, and token estimates.
+- Pins deterministic repository-only lockfiles and verifies pull-request drift.
+- Emits GitHub-compatible SARIF 2.1.0 without external or user-source locations.
 
 ## Build
 
@@ -68,6 +70,41 @@ Fail CI when a warning or error is found:
 ./bin/agent-config-inspector scan . --fail-on warning
 ```
 
+Pin the current repository-owned instruction state and verify it later:
+
+```bash
+./bin/agent-config-inspector pin .
+./bin/agent-config-inspector verify .
+```
+
+The default lockfile is `agent-config-inspector.lock.json`. It contains repository-relative paths and digests only. See the [snapshot format](docs/snapshot-format.md).
+
+Generate SARIF locally:
+
+```bash
+./bin/agent-config-inspector verify . --format sarif > agent-config-inspector.sarif
+```
+
+Use the composite GitHub Action after checking out the repository:
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+
+steps:
+  - uses: actions/checkout@v7.0.1
+  - uses: east-true/agent-config-inspector@v0.2.0
+    with:
+      command: verify
+      snapshot: agent-config-inspector.lock.json
+      fail-on: warning
+      version: v0.2.0
+      upload-sarif: "true"
+```
+
+The Action downloads the selected GitHub Release, verifies its SHA-256 entry from `checksums.txt`, and then runs it. Set the `version` input to an exact release tag when a workflow requires a fixed binary.
+
 Inspect the exact provider registry:
 
 ```bash
@@ -93,6 +130,8 @@ Warnings do not fail by default. Use `--fail-on warning` for a stricter CI polic
 The default scan is local, offline, read-only, repository-scoped, and does not execute provider CLIs, hooks, build scripts, MCP servers, or repository commands. Output contains metadata and content digests for repository-owned sources, never instruction text.
 
 User-level instructions are excluded unless `--include-user-context` is supplied. In that mode, only documented user instruction locations are inventoried and output identifiers remain opaque. See [Privacy](docs/privacy.md) and [Security policy](SECURITY.md) before publishing a report produced with local context.
+
+`pin` and `verify` deliberately refuse `--include-user-context`. A commit-ready lockfile cannot represent user-source existence, paths, content, fingerprints, or token counts.
 
 ## Accuracy boundary
 

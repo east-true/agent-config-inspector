@@ -46,12 +46,14 @@ func TestScanner(t *testing.T) {
 			t.Fatalf("comparisons = %#v", report.Comparisons)
 		}
 	})
-	t.Run("unsupported provider is explicit", func(t *testing.T) {
-		_, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{"gemini"}})
-		if err == nil || !strings.Contains(err.Error(), "unsupported provider") {
-			t.Fatalf("err = %v", err)
-		}
-	})
+	for _, providerID := range []string{"gemini", "kimi", "grok", "copilot"} {
+		t.Run("unsupported provider "+providerID+" is explicit", func(t *testing.T) {
+			_, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{providerID}})
+			if err == nil || !strings.Contains(err.Error(), "unsupported provider") {
+				t.Fatalf("err = %v", err)
+			}
+		})
+	}
 	t.Run("safe JSON is deterministic", func(t *testing.T) {
 		root := t.TempDir()
 		mustWrite(t, filepath.Join(root, "AGENTS.md"), "Run tests")

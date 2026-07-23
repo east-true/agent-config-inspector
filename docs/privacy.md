@@ -26,6 +26,23 @@ User-source output replaces real paths with opaque labels such as `<user-instruc
 
 Even a redacted report can reveal that a local instruction exists or causes a difference. Review it before publication.
 
+## Repository snapshots
+
+`pin` and `verify` refuse `--include-user-context`. The snapshot model is separate from the scan-report model and has no field for source origin, user labels, source content, findings, absolute workspace paths, token estimates, or external state.
+
+Repository snapshots contain only:
+
+- selected provider and target identities;
+- adapter and documented provider-version identity;
+- repository-relative included and excluded source identities;
+- repository source digests and scope metadata;
+- repository-only effective graph digests;
+- a domain-separated lock digest.
+
+Building a lockfile from an internal report filters user sources before calculating prediction and effective digests. Tests require otherwise-identical reports with and without user context to produce byte-identical lockfiles.
+
+SARIF uses the same boundary. Only validated repository-relative paths can become SARIF locations; external and opaque user labels are omitted.
+
 ## External imports
 
 Repository instructions that import an absolute path, `~` path, or relative path outside the workspace are rejected by default. The external path is represented as `<external-import>` and its bytes are not read. Imports originating inside opted-in user instructions are inventoried but not expanded in the preview.

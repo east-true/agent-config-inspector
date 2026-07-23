@@ -2293,7 +2293,7 @@ scanner를 둔다.
 4. target 자동 발견을 어느 범위까지 할지
 5. token estimate를 provider tokenizer 없이 어떻게 표시할지
 6. repository config filename 확정
-7. lockfile filename 확정
+7. ~~lockfile filename 확정~~ → `agent-config-inspector.lock.json`으로 결정, ADR 0006 참조
 8. public Go API를 alpha에 노출할지
 9. Kimi와 Grok을 `full` support로 승격하는 데 필요한 evidence 기준
 10. Copilot surface 지원 순서

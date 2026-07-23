@@ -18,6 +18,15 @@ Support labels describe only the listed capability. They do not imply model-beha
 | `openai-codex/cli` | User instruction | Preview | Explicit opt-in; `CODEX_HOME` respected; safe opaque output |
 | Gemini, Kimi, Grok, Copilot, others | All | Unsupported | Planned as independent later adapters |
 
+Output and CI capabilities:
+
+| Capability | Status | Notes |
+|---|---|---|
+| Text and JSON reports | Preview | Safe redaction by default |
+| SARIF 2.1.0 | Preview | Repository-relative locations only |
+| Repository `pin` and `verify` | Preview | Canonical repository-only lockfile |
+| Composite GitHub Action | Preview | Verified release download; optional SARIF upload |
+
 Evidence:
 
 - [Claude Code memory documentation](https://code.claude.com/docs/en/memory)

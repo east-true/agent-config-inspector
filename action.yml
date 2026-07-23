@@ -1,0 +1,59 @@
+name: Agent Config Inspector
+description: Verify Claude Code and Codex CLI repository instruction drift
+author: east-true
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  command:
+    description: Command to run (verify or scan)
+    required: false
+    default: verify
+  workspace:
+    description: Workspace path relative to the job checkout
+    required: false
+    default: .
+  snapshot:
+    description: Repository snapshot path used by verify
+    required: false
+    default: agent-config-inspector.lock.json
+  fail-on:
+    description: Finding threshold (error, warning, or never)
+    required: false
+    default: error
+  version:
+    description: Release tag to install, or latest
+    required: false
+    default: latest
+  upload-sarif:
+    description: Upload SARIF to GitHub code scanning
+    required: false
+    default: "false"
+
+outputs:
+  sarif-file:
+    description: Absolute path to the generated SARIF file
+    value: ${{ steps.inspect.outputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download, verify, and run Agent Config Inspector
+      id: inspect
+      shell: bash
+      env:
+        ACI_ACTION_REPOSITORY: ${{ github.action_repository }}
+        ACI_COMMAND: ${{ inputs.command }}
+        ACI_FAIL_ON: ${{ inputs.fail-on }}
+        ACI_SNAPSHOT: ${{ inputs.snapshot }}
+        ACI_VERSION: ${{ inputs.version }}
+        ACI_WORKSPACE: ${{ inputs.workspace }}
+      run: "$GITHUB_ACTION_PATH/scripts/run-action.sh"
+
+    - name: Upload SARIF
+      if: ${{ always() && inputs.upload-sarif == 'true' && steps.inspect.outputs.sarif-file != '' }}
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: ${{ steps.inspect.outputs.sarif-file }}

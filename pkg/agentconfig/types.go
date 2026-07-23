@@ -1,7 +1,8 @@
 package agentconfig
 
+var Version = "0.2.0-dev"
+
 const (
-	Version                = "0.1.0-dev"
 	SchemaVersion          = 1
 	AdapterRegistryVersion = "2026-07-24"
 )

@@ -14,6 +14,9 @@ Current limitations:
 - Token estimates use UTF-8 bytes divided by four, not a provider tokenizer.
 - Lexical command and prohibition findings are conservative signals, not semantic equivalence judgments.
 - Symlinked rule directories are not recursively walked in the preview. Direct source-file symlinks can be enabled only when they resolve inside the workspace.
-- `matrix`, `pin`, `verify`, `probe`, SARIF, and the reusable GitHub Action belong to later phases.
+- `matrix` and `probe` belong to later phases.
+- Snapshot verification detects repository and adapter/tool metadata drift but does not semantically classify whether a changed instruction is equivalent.
+- The composite GitHub Action requires a published release with matching platform tarballs and `checksums.txt`; branch-only revisions cannot be installed through the Action.
+- Release archives currently target Linux and macOS on amd64 and arm64. Windows packaging is not yet available.
 
 When accuracy matters, compare a report with the provider's own runtime context inspection and record the exact provider version.

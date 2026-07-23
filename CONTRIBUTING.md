@@ -15,6 +15,7 @@ Thank you for helping make agent configuration easier to inspect.
 go test ./...
 go vet ./...
 go build ./cmd/agent-config-inspector
+go run ./cmd/agent-config-inspector verify .
 git diff --check
 ```
 
@@ -34,6 +35,8 @@ An adapter change should include tests for applicable cases:
 - explicit unsupported behavior for adjacent surfaces.
 
 Provider support is capability-specific. Do not label an adapter “full” when it handles only repository instruction discovery.
+
+Snapshot or CI-distribution changes must also preserve deterministic canonical JSON, repository-only redaction, safe workspace-relative file handling, strict archive membership, and checksum verification. Run `./scripts/build-release.sh v0.0.0-test <temporary-directory>` when changing release packaging.
 
 ## Pull requests
 

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "agent-config-inspector",
+    "version": "0.2.0-dev"
+  },
+  "adapter_registry": "2026-07-24",
+  "request": {
+    "targets": [
+      "."
+    ],
+    "providers": [
+      "anthropic-claude-code/cli",
+      "openai-codex/cli"
+    ]
+  },
+  "entries": [
+    {
+      "provider": {
+        "id": "anthropic-claude-code/cli",
+        "adapter_id": "builtin/claude/v1",
+        "version_requirement": "current as of 2026-07-24",
+        "support": "preview",
+        "depth": "repository-instructions"
+      },
+      "target": ".",
+      "state": "complete",
+      "prediction": "predicted-empty",
+      "included_sources": [],
+      "excluded_sources": [],
+      "effective_repository_digest": {
+        "algorithm": "sha256",
+        "value": "14df4965c05539d5a2ebef2a15708d8006e71ddbc8c9ed18cbbfff16e57e1c77"
+      }
+    },
+    {
+      "provider": {
+        "id": "openai-codex/cli",
+        "adapter_id": "builtin/codex/v1",
+        "version_requirement": "current as of 2026-07-24",
+        "support": "preview",
+        "depth": "repository-instructions"
+      },
+      "target": ".",
+      "state": "complete",
+      "prediction": "predicted-empty",
+      "included_sources": [],
+      "excluded_sources": [],
+      "effective_repository_digest": {
+        "algorithm": "sha256",
+        "value": "14df4965c05539d5a2ebef2a15708d8006e71ddbc8c9ed18cbbfff16e57e1c77"
+      }
+    }
+  ],
+  "lock_digest": {
+    "algorithm": "sha256",
+    "value": "ccefc39ff94031fb9916349b1c8f6c3f3bb302480171c46c18525673587499b9"
+  }
+}
