@@ -12,7 +12,7 @@ import (
 func TestCLI(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		code, stdout, _ := invoke(t, []string{"version"})
-		if code != exitOK || !strings.Contains(stdout, "0.6.0-dev") {
+		if code != exitOK || !strings.Contains(stdout, "0.6.0") {
 			t.Fatalf("code = %d, stdout = %q", code, stdout)
 		}
 	})

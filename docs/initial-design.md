@@ -1,8 +1,8 @@
 # Agent Config Inspector 최초 설계
 
-> 문서 상태: Living design — Phase 5 skipped, Phase 7 source implemented, v0.6.0 release preparation
+> 문서 상태: Living design — Phase 5 skipped, Phase 7 complete, v0.6.0 released
 >
-> 문서 버전: 0.6.0-draft
+> 문서 버전: 0.6.0
 >
 > 기준일: 2026-07-24
 >
@@ -38,8 +38,8 @@ adapter 설계가 존재하더라도 실제 adapter와 fixture가 release에 포
 이 문단의 “최초 릴리스”는 역사적 범위를 뜻한다. v0.3.0에는 Gemini CLI가 추가되었고,
 v0.4.0에는 Phase 4의 Kimi Code CLI baseline adapter가 추가되었다. Grok Build Phase 5는
 의도적으로 건너뛰었고 Grok은 계속 `unsupported`다. 현재 source에는 Phase 6의 격리된
-행동 probe와 Phase 7의 GitHub Copilot CLI baseline adapter가 포함되어 v0.6.0 release
-gate를 검증 중이다. Copilot coding agent, code review, VS Code 표면은 계속 `unsupported`다.
+행동 probe와 Phase 7의 GitHub Copilot CLI baseline adapter는 v0.6.0에 포함되었다.
+Copilot coding agent, code review, VS Code 표면은 계속 `unsupported`다.
 
 도구가 해결하려는 질문은 단순하다.
 
@@ -2146,7 +2146,7 @@ next: simplify the import graph or raise the limit explicitly
 
 ### Phase 6: Behavioral evidence
 
-상태: source 구현 완료, v0.5.0 release 준비
+상태: 완료, 별도 v0.5.0 없이 v0.6.0에 포함
 
 산출물:
 
@@ -2164,7 +2164,7 @@ next: simplify the import graph or raise the limit explicitly
 
 ### Phase 7: GitHub Copilot와 surface별 adapter
 
-상태: source 구현 완료, v0.6.0 release 준비
+상태: 완료, v0.6.0에 포함
 
 산출물:
 
