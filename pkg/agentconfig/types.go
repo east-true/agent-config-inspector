@@ -4,7 +4,7 @@ var Version = "0.9.0-dev"
 
 const (
 	SchemaVersion               = 1
-	AdapterRegistryVersion      = "2026-07-24.7"
+	AdapterRegistryVersion      = "2026-07-24.8"
 	SkillInventorySchemaVersion = 1
 	AgentInventorySchemaVersion = 1
 	MCPInventorySchemaVersion   = 1
@@ -122,9 +122,10 @@ type ToolInfo struct {
 }
 
 type RequestInfo struct {
-	Workspace string   `json:"workspace"`
-	Targets   []string `json:"targets"`
-	Providers []string `json:"providers"`
+	Workspace      string   `json:"workspace"`
+	WorkspaceLabel string   `json:"workspace_label,omitempty"`
+	Targets        []string `json:"targets"`
+	Providers      []string `json:"providers"`
 }
 
 type PrivacyInfo struct {
@@ -147,6 +148,7 @@ type Report struct {
 type ScanOptions struct {
 	Targets            []string
 	Providers          []string
+	WorkspaceLabel     string
 	IncludeUserContext bool
 	FollowSymlinks     bool
 	MaxSourceBytes     int64

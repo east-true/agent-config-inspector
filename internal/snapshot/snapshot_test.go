@@ -59,6 +59,19 @@ func TestRepositorySnapshot(t *testing.T) {
 		}
 	})
 
+	t.Run("workspace label cannot affect lockfile", func(t *testing.T) {
+		withoutLabel := repositoryReport("Run tests")
+		withLabel := repositoryReport("Run tests")
+		withLabel.Request.WorkspaceLabel = "private-repository-label"
+		first := buildLock(t, withoutLabel)
+		second := buildLock(t, withLabel)
+		firstBytes, _ := snapshot.CanonicalBytes(first)
+		secondBytes, _ := snapshot.CanonicalBytes(second)
+		if !bytes.Equal(firstBytes, secondBytes) || strings.Contains(string(secondBytes), "private-repository-label") {
+			t.Fatalf("workspace label affected lockfile\n%s\n%s", firstBytes, secondBytes)
+		}
+	})
+
 	t.Run("tampered digest is rejected", func(t *testing.T) {
 		lock := buildLock(t, repositoryReport("Run tests"))
 		lock.LockDigest.Value = strings.Repeat("0", 64)

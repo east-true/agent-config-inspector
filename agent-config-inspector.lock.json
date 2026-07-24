@@ -4,7 +4,7 @@
     "name": "agent-config-inspector",
     "version": "0.9.0-dev"
   },
-  "adapter_registry": "2026-07-24.7",
+  "adapter_registry": "2026-07-24.8",
   "request": {
     "targets": [
       "."
@@ -111,6 +111,6 @@
   ],
   "lock_digest": {
     "algorithm": "sha256",
-    "value": "24d818c017d2c1a72b77a7204a9c06ac4295226dbb06429f245be50517874104"
+    "value": "b5668a4ecff01b5976d1fe3d123b0a7e18fe9c5289dcf5499059b5dc582e8edb"
   }
 }

@@ -79,6 +79,8 @@ Output and CI capabilities:
 | Capability | Status | Notes |
 |---|---|---|
 | Text and JSON reports | Preview | Safe redaction by default |
+| Empty-result diagnostics | Preview | Provider-specific checked instruction families; general repository content remains outside scan scope |
+| Explicit workspace labels | Preview | Optional user-supplied text/JSON label; no inferred directory name; excluded from snapshots |
 | SARIF 2.1.0 | Preview | Repository-relative locations only |
 | Repository `pin` and `verify` | Preview | Canonical repository-only lockfile |
 | Composite GitHub Action | Preview | Verified release download; optional SARIF upload |

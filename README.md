@@ -57,6 +57,15 @@ Scan the current repository for all supported providers:
 ./bin/agent-config-inspector scan .
 ```
 
+Reports never infer or print the workspace directory name. Add an explicit safe label when several reports need to be distinguishable:
+
+```bash
+./bin/agent-config-inspector scan . \
+  --workspace-label adaptive-ai-orchestrator
+```
+
+The label is included in text and JSON reports but not snapshots. When no supported instruction source exists, text output now explains the provider-specific filename families that were checked. General README, source code, and application-specific runtime directories are not treated as coding-agent instructions.
+
 Explain Codex resolution for one file:
 
 ```bash

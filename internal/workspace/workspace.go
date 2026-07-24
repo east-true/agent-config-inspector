@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -17,7 +18,27 @@ var (
 	ErrSymlink          = errors.New("symlink traversal is disabled")
 	ErrTooLarge         = errors.New("source exceeds configured byte limit")
 	ErrInvalidPath      = errors.New("invalid logical path")
+	ErrInvalidLabel     = errors.New("invalid workspace label")
 )
+
+// NormalizeLabel validates an explicitly user-supplied display label. Labels
+// are never inferred from filesystem paths because repository names can be
+// sensitive report metadata.
+func NormalizeLabel(label string) (string, error) {
+	label = strings.TrimSpace(label)
+	if label == "" {
+		return "", nil
+	}
+	if len([]byte(label)) > 80 || !utf8.ValidString(label) {
+		return "", ErrInvalidLabel
+	}
+	for _, character := range label {
+		if unicode.IsControl(character) || unicode.In(character, unicode.Cf) || character == '/' || character == '\\' {
+			return "", ErrInvalidLabel
+		}
+	}
+	return label, nil
+}
 
 type File struct {
 	Logical string

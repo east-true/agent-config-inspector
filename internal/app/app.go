@@ -27,6 +27,10 @@ func (s *Scanner) Scan(ctx context.Context, workspacePath string, options agentc
 	if err != nil {
 		return agentconfig.Report{}, err
 	}
+	workspaceLabel, err := workspace.NormalizeLabel(options.WorkspaceLabel)
+	if err != nil {
+		return agentconfig.Report{}, err
+	}
 	targets := canonicalValues(options.Targets)
 	if len(targets) == 0 {
 		targets = []string{"."}
@@ -57,7 +61,7 @@ func (s *Scanner) Scan(ctx context.Context, workspacePath string, options agentc
 	report := agentconfig.Report{
 		SchemaVersion: agentconfig.SchemaVersion,
 		Tool:          agentconfig.ToolInfo{Name: "agent-config-inspector", Version: agentconfig.Version, AdapterRegistry: agentconfig.AdapterRegistryVersion},
-		Request:       agentconfig.RequestInfo{Workspace: "<workspace>", Targets: targets, Providers: canonicalProviders},
+		Request:       agentconfig.RequestInfo{Workspace: "<workspace>", WorkspaceLabel: workspaceLabel, Targets: targets, Providers: canonicalProviders},
 		Privacy:       agentconfig.PrivacyInfo{Redaction: "safe", UserContextScanned: options.IncludeUserContext, SensitiveOutput: false},
 		Results:       []agentconfig.Resolution{},
 		Comparisons:   []agentconfig.Comparison{},
@@ -90,6 +94,11 @@ func (s *Scanner) Scan(ctx context.Context, workspacePath string, options agentc
 					report.Complete = false
 				}
 			}
+			if resolution.Prediction == "predicted-empty" && len(resolution.ExcludedSources) == 0 {
+				emptyFinding := emptyDiscoveryFinding(resolution.Provider.ID, target)
+				resolution.Findings = append(resolution.Findings, emptyFinding)
+			}
+			compare.SortFindings(resolution.Findings)
 			report.Results = append(report.Results, resolution)
 			report.Findings = append(report.Findings, resolution.Findings...)
 		}
@@ -105,6 +114,29 @@ func (s *Scanner) Scan(ctx context.Context, workspacePath string, options agentc
 		redactUserContext(&report)
 	}
 	return report, nil
+}
+
+func emptyDiscoveryFinding(providerID, target string) agentconfig.Finding {
+	checked := map[string]string{
+		"anthropic-claude-code/cli": "CLAUDE.md, CLAUDE.local.md, .claude/CLAUDE.md, and .claude/rules/**/*.md along the selected target hierarchy",
+		"github-copilot/cli":        ".github/copilot-instructions.md, compatible AGENTS.md/CLAUDE.md/GEMINI.md files, and .github/instructions/**/*.instructions.md along the selected target hierarchy",
+		"google-gemini/cli":         "configured Gemini context filenames (GEMINI.md by default) along the selected target hierarchy",
+		"moonshotai-kimi-code/cli":  ".kimi-code/AGENTS.md, AGENTS.md, and agents.md inside the selected Git-root hierarchy",
+		"openai-codex/cli":          "AGENTS.override.md, AGENTS.md, and configured fallback instruction filenames along the selected target hierarchy",
+	}[providerID]
+	if checked == "" {
+		checked = "the selected adapter's documented repository instruction locations"
+	}
+	return agentconfig.Finding{
+		Code: "ACI001", Severity: "info", Title: "No repository instruction source was discovered",
+		Summary:   "Checked " + checked + "; no applicable source was found.",
+		Providers: []string{providerID}, Targets: []string{target}, Confidence: "high",
+		Remediation: []string{
+			"Add a documented provider instruction file when repository-owned agent guidance is intended.",
+			"Use inventory skills, inventory agents, and inventory mcp for those separate configuration surfaces.",
+			"General repository files and unsupported product-state directories are outside this instruction scan.",
+		},
+	}
 }
 
 func redactUserContext(report *agentconfig.Report) {

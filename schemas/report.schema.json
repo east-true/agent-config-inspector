@@ -31,6 +31,12 @@
       "required": ["workspace", "targets", "providers"],
       "properties": {
         "workspace": { "const": "<workspace>" },
+        "workspace_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\u0000-\\u001f\\u007f]+$"
+        },
         "targets": { "type": "array", "items": { "type": "string" } },
         "providers": { "type": "array", "items": { "type": "string" } }
       },

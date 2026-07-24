@@ -47,6 +47,7 @@ func (values *stringList) Set(value string) error {
 
 type commandOptions struct {
 	workspace          string
+	workspaceLabel     string
 	format             string
 	providers          stringList
 	targets            stringList
@@ -345,7 +346,7 @@ func runAnalysis(ctx context.Context, scanner *app.Scanner, command string, args
 		options.targets = append(options.targets, ".")
 	}
 	result, scanErr := scanner.Scan(ctx, options.workspace, agentconfig.ScanOptions{
-		Targets: options.targets, Providers: options.providers, IncludeUserContext: options.includeUserContext,
+		Targets: options.targets, Providers: options.providers, WorkspaceLabel: options.workspaceLabel, IncludeUserContext: options.includeUserContext,
 		FollowSymlinks: options.followSymlinks, MaxSourceBytes: options.maxSourceBytes, MaxImportDepth: options.maxImportDepth,
 	})
 	if scanErr != nil {
@@ -564,6 +565,9 @@ func parseAnalysisOptions(command string, args []string, output io.Writer) (comm
 	flags.Var(&options.targets, "target", "workspace-relative target; repeatable")
 	flags.Var(&options.targets, "targets", "comma-separated workspace-relative targets")
 	flags.StringVar(&options.format, "format", options.format, "text, json, or sarif")
+	if command == "scan" || command == "explain" || command == "diff" {
+		flags.StringVar(&options.workspaceLabel, "workspace-label", "", "explicit safe label for text/JSON reports; filesystem names are never inferred")
+	}
 	flags.BoolVar(&options.includeUserContext, "include-user-context", false, "opt in to redacted user-level instructions")
 	flags.BoolVar(&options.followSymlinks, "follow-workspace-symlinks", false, "follow symlinks that remain inside workspace")
 	flags.Int64Var(&options.maxSourceBytes, "max-source-bytes", options.maxSourceBytes, "maximum bytes read from one source")
@@ -595,6 +599,14 @@ func parseAnalysisOptions(command string, args []string, output io.Writer) (comm
 	if options.failOn != "error" && options.failOn != "warning" && options.failOn != "never" {
 		return options, errors.New("--fail-on must be error, warning, or never")
 	}
+	label, labelErr := workspace.NormalizeLabel(options.workspaceLabel)
+	if labelErr != nil {
+		return options, errors.New("--workspace-label must be at most 80 UTF-8 bytes and contain no control/format characters or path separators")
+	}
+	if label != "" && options.format == "sarif" {
+		return options, errors.New("--workspace-label is available only for text or JSON reports")
+	}
+	options.workspaceLabel = label
 	return options, nil
 }
 

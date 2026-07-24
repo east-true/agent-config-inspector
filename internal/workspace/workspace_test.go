@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -109,6 +110,18 @@ func TestViewBoundaries(t *testing.T) {
 			t.Fatalf("followed directories = %#v, err = %v", directories, err)
 		}
 	})
+}
+
+func TestNormalizeLabel(t *testing.T) {
+	label, err := NormalizeLabel("  adaptive-ai-orchestrator  ")
+	if err != nil || label != "adaptive-ai-orchestrator" {
+		t.Fatalf("label = %q, err = %v", label, err)
+	}
+	for _, invalid := range []string{"private/project", `private\project`, "line\nbreak", "bidi\u202ename", strings.Repeat("a", 81)} {
+		if _, err := NormalizeLabel(invalid); !errors.Is(err, ErrInvalidLabel) {
+			t.Fatalf("label %q err = %v", invalid, err)
+		}
+	}
 }
 
 func mustWrite(t *testing.T, name, content string) {

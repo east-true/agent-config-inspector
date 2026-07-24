@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	outputreport "github.com/east-true/agent-config-inspector/internal/report"
+	"github.com/east-true/agent-config-inspector/internal/workspace"
 	"github.com/east-true/agent-config-inspector/pkg/agentconfig"
 )
 
@@ -19,8 +21,25 @@ func TestScanner(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(report.Comparisons) != 10 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") {
+		if len(report.Comparisons) != 10 || !allEquivalent(report.Comparisons) || hasCode(report.Findings, "ACI002") || countCode(report.Findings, "ACI001") != 5 {
 			t.Fatalf("report = %#v", report)
+		}
+	})
+	t.Run("workspace label is explicit and safe", func(t *testing.T) {
+		report, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{"codex"}, WorkspaceLabel: " adaptive-ai-orchestrator "})
+		if err != nil || report.Request.Workspace != "<workspace>" || report.Request.WorkspaceLabel != "adaptive-ai-orchestrator" {
+			t.Fatalf("request = %#v, err = %v", report.Request, err)
+		}
+		if _, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{WorkspaceLabel: "private/path"}); !errors.Is(err, workspace.ErrInvalidLabel) {
+			t.Fatalf("invalid label err = %v", err)
+		}
+	})
+	t.Run("effective provider does not get an empty discovery finding", func(t *testing.T) {
+		root := t.TempDir()
+		mustWrite(t, filepath.Join(root, "AGENTS.md"), "Run tests")
+		report, err := New().Scan(context.Background(), root, agentconfig.ScanOptions{Providers: []string{"codex"}})
+		if err != nil || hasCode(report.Findings, "ACI001") {
+			t.Fatalf("findings = %#v, err = %v", report.Findings, err)
 		}
 	})
 	t.Run("one sided instruction is reported", func(t *testing.T) {
@@ -194,6 +213,16 @@ func hasCode(findings []agentconfig.Finding, code string) bool {
 		}
 	}
 	return false
+}
+
+func countCode(findings []agentconfig.Finding, code string) int {
+	count := 0
+	for _, finding := range findings {
+		if finding.Code == code {
+			count++
+		}
+	}
+	return count
 }
 
 func mustWrite(t *testing.T, name, content string) {

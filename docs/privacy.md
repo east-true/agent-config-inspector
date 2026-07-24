@@ -13,6 +13,8 @@ Text and JSON output may contain:
 
 It does not contain instruction text, an absolute workspace path, account name, home path, hostname, credential, provider session output, or repository command output.
 
+The workspace remains `<workspace>` by default; its filesystem basename is never inferred. `--workspace-label` adds only the user-supplied label to text and JSON reports. Labels are trimmed, limited to 80 UTF-8 bytes, and reject control/format characters and path separators. A label can still disclose a private repository or customer name, so omit it from reports intended for publication. Workspace labels are excluded from `pin` and `verify` snapshots.
+
 ## User-context opt-in
 
 `--include-user-context` explicitly permits reads from documented user instruction locations:

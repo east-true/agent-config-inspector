@@ -17,9 +17,42 @@ func TestCLI(t *testing.T) {
 		}
 	})
 	t.Run("scan empty workspace", func(t *testing.T) {
-		code, stdout, stderr := invoke(t, []string{"scan", t.TempDir(), "--fail-on", "never"})
-		if code != exitOK || stderr != "" || !strings.Contains(stdout, "predicted-empty") {
+		code, stdout, stderr := invoke(t, []string{"scan", t.TempDir(), "--workspace-label", "adaptive-ai-orchestrator", "--fail-on", "never"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Workspace: <workspace> (label: adaptive-ai-orchestrator)") || !strings.Contains(stdout, "empty reason: Checked") || !strings.Contains(stdout, "omitted from text because every selected provider is predicted-empty") || !strings.Contains(stdout, "Result: predicted-empty") {
 			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("workspace label appears in JSON without revealing the path", func(t *testing.T) {
+		root := t.TempDir()
+		code, stdout, stderr := invoke(t, []string{"scan", root, "--provider", "codex", "--workspace-label", "demo-repository", "--format", "json", "--fail-on", "never"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, `"workspace_label": "demo-repository"`) || !strings.Contains(stdout, `"code": "ACI001"`) || strings.Contains(stdout, root) {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("unsafe workspace label is rejected", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"scan", t.TempDir(), "--workspace-label", "private/path"})
+		if code != exitUsage || !strings.Contains(stderr, "--workspace-label must be") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("workspace label is not silently discarded by SARIF", func(t *testing.T) {
+		code, _, stderr := invoke(t, []string{"scan", t.TempDir(), "--workspace-label", "demo", "--format", "sarif"})
+		if code != exitUsage || !strings.Contains(stderr, "only for text or JSON") {
+			t.Fatalf("code = %d, stderr = %q", code, stderr)
+		}
+	})
+	t.Run("aggregate prediction distinguishes effective and mixed results", func(t *testing.T) {
+		root := t.TempDir()
+		if err := os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte("Run tests"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := invoke(t, []string{"explain", root, "--provider", "codex"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Result: predicted-effective") || strings.Contains(stdout, "empty reason:") {
+			t.Fatalf("effective code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+		code, stdout, stderr = invoke(t, []string{"scan", root, "--fail-on", "never"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Result: predicted-mixed") {
+			t.Fatalf("mixed code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
 		}
 	})
 	t.Run("warning threshold", func(t *testing.T) {

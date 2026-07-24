@@ -17,7 +17,11 @@ func WriteJSON(writer io.Writer, value agentconfig.Report) error {
 }
 
 func WriteText(writer io.Writer, value agentconfig.Report) error {
-	if _, err := fmt.Fprintf(writer, "Agent Config Inspector %s\nWorkspace: %s\n", value.Tool.Version, value.Request.Workspace); err != nil {
+	workspaceDisplay := value.Request.Workspace
+	if value.Request.WorkspaceLabel != "" {
+		workspaceDisplay += " (label: " + value.Request.WorkspaceLabel + ")"
+	}
+	if _, err := fmt.Fprintf(writer, "Agent Config Inspector %s\nWorkspace: %s\n", value.Tool.Version, workspaceDisplay); err != nil {
 		return err
 	}
 	for _, result := range value.Results {
@@ -29,6 +33,11 @@ func WriteText(writer io.Writer, value agentconfig.Report) error {
 		if len(result.IncludedSources) == 0 {
 			if _, err := fmt.Fprintln(writer, "  included: none"); err != nil {
 				return err
+			}
+			if explanation := emptyDiscoveryExplanation(result.Findings); explanation != "" {
+				if _, err := fmt.Fprintf(writer, "  empty reason: %s\n", explanation); err != nil {
+					return err
+				}
 			}
 		} else {
 			if _, err := fmt.Fprintln(writer, "  included:"); err != nil {
@@ -59,7 +68,12 @@ func WriteText(writer io.Writer, value agentconfig.Report) error {
 			return err
 		}
 	}
-	if len(value.Comparisons) > 0 {
+	allEmpty := allResultsEmpty(value.Results)
+	if len(value.Comparisons) > 0 && allEmpty {
+		if _, err := fmt.Fprintln(writer, "\nComparisons\n  omitted from text because every selected provider is predicted-empty; structured comparisons remain available in JSON\n\nScope note: general repository files and unsupported product-state directories are outside this instruction scan"); err != nil {
+			return err
+		}
+	} else if len(value.Comparisons) > 0 {
 		if _, err := fmt.Fprintln(writer, "\nComparisons"); err != nil {
 			return err
 		}
@@ -75,11 +89,12 @@ func WriteText(writer io.Writer, value agentconfig.Report) error {
 			}
 		}
 	}
-	if len(value.Findings) > 0 {
+	visibleFindings := findingsExcept(value.Findings, "ACI001")
+	if len(visibleFindings) > 0 {
 		if _, err := fmt.Fprintln(writer, "\nFindings"); err != nil {
 			return err
 		}
-		for _, finding := range value.Findings {
+		for _, finding := range visibleFindings {
 			if _, err := fmt.Fprintf(writer, "  %-7s %-6s %s\n           %s\n",
 				strings.ToUpper(finding.Severity), finding.Code, finding.Title, finding.Summary); err != nil {
 				return err
@@ -90,6 +105,49 @@ func WriteText(writer io.Writer, value agentconfig.Report) error {
 	if value.Privacy.UserContextScanned {
 		contextStatus = "scanned with safe redaction"
 	}
-	_, err := fmt.Fprintf(writer, "\nResult: predicted-effective, not observed model compliance\nSensitive user context: %s\n", contextStatus)
+	_, err := fmt.Fprintf(writer, "\nResult: %s, not observed model compliance\nSensitive user context: %s\n", aggregatePrediction(value.Results), contextStatus)
 	return err
+}
+
+func emptyDiscoveryExplanation(findings []agentconfig.Finding) string {
+	for _, finding := range findings {
+		if finding.Code == "ACI001" {
+			return finding.Summary
+		}
+	}
+	return ""
+}
+
+func findingsExcept(findings []agentconfig.Finding, code string) []agentconfig.Finding {
+	result := make([]agentconfig.Finding, 0, len(findings))
+	for _, finding := range findings {
+		if finding.Code != code {
+			result = append(result, finding)
+		}
+	}
+	return result
+}
+
+func allResultsEmpty(results []agentconfig.Resolution) bool {
+	return len(results) > 0 && aggregatePrediction(results) == "predicted-empty"
+}
+
+func aggregatePrediction(results []agentconfig.Resolution) string {
+	effective, empty := 0, 0
+	for _, result := range results {
+		switch result.Prediction {
+		case "predicted-effective":
+			effective++
+		case "predicted-empty":
+			empty++
+		}
+	}
+	switch {
+	case effective > 0 && empty > 0:
+		return "predicted-mixed"
+	case effective > 0:
+		return "predicted-effective"
+	default:
+		return "predicted-empty"
+	}
 }

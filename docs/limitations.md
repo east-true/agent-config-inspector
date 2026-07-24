@@ -25,6 +25,8 @@ Current limitations:
 - Copilot imports are expanded only for documented Copilot, AGENTS, and Claude instruction families, inside the repository, with at most five hops. User imports, `GEMINI.md` imports, and modular-file imports are not expanded.
 - Copilot `/instructions` enable/disable state, `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`, installed-version detection, and provider-managed policy are not modeled. No Copilot behavioral probe exists yet.
 - Token estimates use UTF-8 bytes divided by four, not a provider tokenizer.
+- `scan` examines documented coding-agent instruction sources, not general README files, source code, arbitrary Markdown, or application-specific runtime/state directories. An empty result therefore means no applicable supported instruction source was found, not that the workspace contains no files.
+- Workspace paths and inferred directory names remain hidden. The optional `--workspace-label` is explicit report metadata supplied by the caller and is not included in repository snapshots.
 - Lexical command and prohibition findings are conservative signals, not semantic equivalence judgments.
 - Symlinked rule directories are not recursively walked in the preview. Direct source-file symlinks can be enabled only when they resolve inside the workspace.
 - `matrix` belongs to a later phase. `probe` currently measures only repository-root instruction discovery; nested precedence, imports, overrides, and other runtime behavior remain unmeasured.
