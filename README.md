@@ -42,7 +42,7 @@ Scan a repository for Claude Code and Codex CLI instructions that apply to one f
 
 Omit `--providers` and `--target` to scan every supported provider at the repository root.
 
-If the result is `predicted-empty`, the report lists the provider-specific instruction locations it checked. README files, source code, and application runtime directories are intentionally outside this instruction scan.
+If the result says `No applicable instructions` (`predicted-empty` in JSON), the report lists the provider-specific instruction locations it checked and suggests the next action. README files, source code, and application runtime directories are intentionally outside this instruction scan.
 
 Continue with the [Getting started guide](docs/getting-started.md) for result interpretation, `explain`, `diff`, and workspace labels. Prebuilt Linux and macOS archives with SHA-256 checksums are available on the [Releases page](https://github.com/east-true/agent-config-inspector/releases/latest).
 

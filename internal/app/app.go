@@ -127,15 +127,25 @@ func emptyDiscoveryFinding(providerID, target string) agentconfig.Finding {
 	if checked == "" {
 		checked = "the selected adapter's documented repository instruction locations"
 	}
+	addGuidance := map[string]string{
+		"anthropic-claude-code/cli": "Add CLAUDE.md or another supported Claude Code instruction source.",
+		"github-copilot/cli":        "Add .github/copilot-instructions.md or another supported Copilot CLI instruction source.",
+		"google-gemini/cli":         "Add GEMINI.md or another configured Gemini CLI context file.",
+		"moonshotai-kimi-code/cli":  "Add .kimi-code/AGENTS.md or another supported Kimi instruction source.",
+		"openai-codex/cli":          "Add AGENTS.md or another supported Codex instruction source.",
+	}[providerID]
+	if addGuidance == "" {
+		addGuidance = "Add a documented provider instruction file."
+	}
+	remediation := []string{addGuidance}
+	if providerID == "anthropic-claude-code/cli" || providerID == "openai-codex/cli" {
+		remediation = append(remediation, "Inspect separate configuration with inventory skills, inventory agents, or inventory mcp.")
+	}
 	return agentconfig.Finding{
 		Code: "ACI001", Severity: "info", Title: "No repository instruction source was discovered",
 		Summary:   "Checked " + checked + "; no applicable source was found.",
 		Providers: []string{providerID}, Targets: []string{target}, Confidence: "high",
-		Remediation: []string{
-			"Add a documented provider instruction file when repository-owned agent guidance is intended.",
-			"Use inventory skills, inventory agents, and inventory mcp for those separate configuration surfaces.",
-			"General repository files and unsupported product-state directories are outside this instruction scan.",
-		},
+		Remediation: remediation,
 	}
 }
 

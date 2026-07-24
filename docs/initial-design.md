@@ -1316,37 +1316,51 @@ non-interactive 환경에서는 별도 `--allow-sensitive-output` 없이는 거�
 
 ```text
 Agent Config Inspector 0.x
-Workspace: <workspace>
+Workspace: hidden (use --workspace-label to add an explicit label)
+Output: human-readable text · use --format json for complete safe structured data
+
 Target: backend/src/users.go
 
-openai-codex/cli
-  support: documented
-  project root: <workspace>
-  included:
-    1. AGENTS.md                     repository/root
-    2. backend/AGENTS.override.md    repository/nearer override
-  excluded:
-    - CLAUDE.md                      unsupported source for this adapter
+Claude Code
+  Result: Applicable instructions found
+  Provider: Anthropic · ID: anthropic-claude-code/cli
+  Adapter: preview · repository-instructions
+  Scope: supported instruction files only; README, source, and product state excluded
+  Observation: user context not scanned · runtime/model compliance not observed
+  Instructions, in resolution order:
+    1. CLAUDE.md
+       Why: hierarchical CLAUDE.md from project root to target
+  Fingerprint: sha256:0123456789ab
+  Estimated tokens: 120 (UTF-8 bytes / 4)
 
-anthropic-claude-code/cli
-  support: documented
-  project root: <workspace>
-  included:
-    1. CLAUDE.md                     repository/root
-  excluded:
-    - AGENTS.md                      not auto-discovered by selected adapter
-    - backend/AGENTS.override.md     unsupported source for this adapter
+Codex CLI
+  Result: Applicable instructions found
+  Provider: OpenAI · ID: openai-codex/cli
+  Adapter: preview · repository-instructions
+  Scope: supported instruction files only; README, source, and product state excluded
+  Observation: user context not scanned · runtime/model compliance not observed
+  Instructions, in resolution order:
+    1. AGENTS.md
+       Why: selected project instruction for this directory
+    2. backend/AGENTS.override.md
+       Why: selected project instruction for this directory
+  Fingerprint: sha256:abcdef012345
+  Estimated tokens: 180 (UTF-8 bytes / 4)
+
+Comparisons
+  Target backend/src/users.go · Claude Code vs Codex CLI
+    Different normalized instructions
+    Shared: 0 · Claude Code only: 1 · Codex CLI only: 2
 
 Findings
-  WARNING ACI002  Repository instruction is asymmetric.
-                  Codex receives backend override guidance; Claude Code does not.
-  INFO    ACI044  Semantic parity is unknown for 3 normalized units.
+  WARNING · ACI040 · Predicted effective instruction graphs differ
+    The providers differ by 1 and 2 normalized units.
+    Applies to: Claude Code, Codex CLI · target backend/src/users.go
 
-Result: predicted-effective, not observed model compliance
-Sensitive user context: not scanned
 ```
 
-기본 출력은 filesystem basename도 추론하지 않는다. 사람이 여러 report를 구분해야 하면
+기본 text 출력은 filesystem basename을 추론하지 않고 workspace가 숨겨졌음을 설명한다. JSON은
+schema의 안정적인 비식별 값인 `<workspace>`를 유지한다. 사람이 여러 report를 구분해야 하면
 `--workspace-label`로 80-byte 이내의 path separator/control·format-character 없는 label을 명시할 수
 있다. label은 text/JSON request metadata에만 포함하며 snapshot에는 넣지 않는다.
 
@@ -1454,7 +1468,7 @@ Domain separation string을 사용해 같은 bytes를 다른 의미의 digest로
 
 `safe`가 기본이다.
 
-- workspace root는 `<workspace>`로 표시
+- JSON의 workspace root는 `<workspace>`로 표시하고 text에서는 내부 placeholder를 출력하지 않음
 - home directory는 `<home>`으로 표시하지 않고 external source마다 opaque label 사용
 - credential-like 문자열은 content snippet에서 제거
 - user-global content는 출력하지 않음

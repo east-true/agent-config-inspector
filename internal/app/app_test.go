@@ -25,6 +25,18 @@ func TestScanner(t *testing.T) {
 			t.Fatalf("report = %#v", report)
 		}
 	})
+	t.Run("empty guidance is provider specific", func(t *testing.T) {
+		claude := emptyDiscoveryFinding("anthropic-claude-code/cli", ".")
+		gemini := emptyDiscoveryFinding("google-gemini/cli", ".")
+		claudeGuidance := strings.Join(claude.Remediation, " ")
+		geminiGuidance := strings.Join(gemini.Remediation, " ")
+		if !strings.Contains(claudeGuidance, "CLAUDE.md") || !strings.Contains(claudeGuidance, "inventory skills") {
+			t.Fatalf("Claude remediation = %#v", claude.Remediation)
+		}
+		if !strings.Contains(geminiGuidance, "GEMINI.md") || strings.Contains(geminiGuidance, "inventory skills") {
+			t.Fatalf("Gemini remediation = %#v", gemini.Remediation)
+		}
+	})
 	t.Run("workspace label is explicit and safe", func(t *testing.T) {
 		report, err := New().Scan(context.Background(), t.TempDir(), agentconfig.ScanOptions{Providers: []string{"codex"}, WorkspaceLabel: " adaptive-ai-orchestrator "})
 		if err != nil || report.Request.Workspace != "<workspace>" || report.Request.WorkspaceLabel != "adaptive-ai-orchestrator" {

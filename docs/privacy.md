@@ -13,7 +13,7 @@ Text and JSON output may contain:
 
 It does not contain instruction text, an absolute workspace path, account name, home path, hostname, credential, provider session output, or repository command output.
 
-The workspace remains `<workspace>` by default; its filesystem basename is never inferred. `--workspace-label` adds only the user-supplied label to text and JSON reports. Labels are trimmed, limited to 80 UTF-8 bytes, and reject control/format characters and path separators. A label can still disclose a private repository or customer name, so omit it from reports intended for publication. Workspace labels are excluded from `pin` and `verify` snapshots.
+The workspace filesystem basename is never inferred. Unlabeled text reports display `Workspace: hidden` with a hint for adding an explicit label and do not print the internal workspace placeholder. JSON retains the stable `<workspace>` placeholder required by the report schema. `--workspace-label` adds only the user-supplied label to text and JSON reports. Labels are trimmed, limited to 80 UTF-8 bytes, and reject control/format characters and path separators. A label can still disclose a private repository or customer name, so omit it from reports intended for publication. Workspace labels are excluded from `pin` and `verify` snapshots.
 
 ## User-context opt-in
 

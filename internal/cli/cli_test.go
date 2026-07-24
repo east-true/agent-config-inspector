@@ -18,7 +18,13 @@ func TestCLI(t *testing.T) {
 	})
 	t.Run("scan empty workspace", func(t *testing.T) {
 		code, stdout, stderr := invoke(t, []string{"scan", t.TempDir(), "--workspace-label", "adaptive-ai-orchestrator", "--fail-on", "never"})
-		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Workspace: <workspace> (label: adaptive-ai-orchestrator)") || !strings.Contains(stdout, "empty reason: Checked") || !strings.Contains(stdout, "omitted from text because every selected provider is predicted-empty") || !strings.Contains(stdout, "Result: predicted-empty") {
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Workspace: adaptive-ai-orchestrator (explicit label)") || !strings.Contains(stdout, "Output: human-readable text · use --format json for complete safe structured data") || strings.Count(stdout, "\nTarget: .\n") != 1 || !strings.Contains(stdout, "Claude Code\n  Result: No applicable instructions") || !strings.Contains(stdout, "Provider: Anthropic · ID: anthropic-claude-code/cli") || !strings.Contains(stdout, "Scope: supported instruction files only; README, source, and product state excluded") || !strings.Contains(stdout, "Observation: user context not scanned · runtime/model compliance not observed") || !strings.Contains(stdout, "Why: Checked") || !strings.Contains(stdout, "Next steps:") || !strings.Contains(stdout, "Not shown because every selected agent has no applicable instructions") || !strings.Contains(stdout, "\nFindings\n") || strings.Contains(stdout, "Project root:") || strings.Contains(stdout, "Instructions: none") || strings.Contains(stdout, "Scope note:") || strings.Contains(stdout, "\nResult:") || strings.Contains(stdout, "Sensitive user context:") {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("unlabeled text explains hidden workspace", func(t *testing.T) {
+		code, stdout, stderr := invoke(t, []string{"explain", t.TempDir(), "--provider", "claude", "--fail-on", "never"})
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Workspace: hidden (use --workspace-label to add an explicit label)") || strings.Contains(stdout, "<workspace>") {
 			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
 		}
 	})
@@ -41,18 +47,28 @@ func TestCLI(t *testing.T) {
 			t.Fatalf("code = %d, stderr = %q", code, stderr)
 		}
 	})
-	t.Run("aggregate prediction distinguishes effective and mixed results", func(t *testing.T) {
+	t.Run("provider predictions distinguish effective and mixed results", func(t *testing.T) {
 		root := t.TempDir()
 		if err := os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte("Run tests"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		code, stdout, stderr := invoke(t, []string{"explain", root, "--provider", "codex"})
-		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Result: predicted-effective") || strings.Contains(stdout, "empty reason:") {
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Result: Applicable instructions found") || !strings.Contains(stdout, "Instructions, in resolution order:") || strings.Contains(stdout, "Why: Checked") || strings.Contains(stdout, "\nResult:") {
 			t.Fatalf("effective code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
 		}
 		code, stdout, stderr = invoke(t, []string{"scan", root, "--fail-on", "never"})
-		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Result: predicted-mixed") {
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "Result: Applicable instructions found") || !strings.Contains(stdout, "Result: No applicable instructions") || strings.Contains(stdout, "\nResult:") {
 			t.Fatalf("mixed code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
+		}
+	})
+	t.Run("text report makes an empty findings section explicit", func(t *testing.T) {
+		root := t.TempDir()
+		if err := os.WriteFile(filepath.Join(root, "CLAUDE.md"), []byte("Run tests"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := invoke(t, []string{"explain", root, "--provider", "claude"})
+		if code != exitOK || stderr != "" || !strings.HasSuffix(strings.TrimSpace(stdout), "Findings\n  None.") {
+			t.Fatalf("code = %d, stdout = %q, stderr = %q", code, stdout, stderr)
 		}
 	})
 	t.Run("warning threshold", func(t *testing.T) {
