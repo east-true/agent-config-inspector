@@ -1,227 +1,99 @@
 # Agent Config Inspector
 
-Agent Config Inspector is an offline CLI that predicts which repository instructions Claude Code, Codex CLI, Gemini CLI, Kimi Code CLI, and GitHub Copilot CLI receive for a target path, then explains configuration drift without executing repository code.
+[![CI](https://github.com/east-true/agent-config-inspector/actions/workflows/ci.yml/badge.svg)](https://github.com/east-true/agent-config-inspector/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/east-true/agent-config-inspector)](https://github.com/east-true/agent-config-inspector/releases/latest)
+[![License](https://img.shields.io/github/license/east-true/agent-config-inspector)](LICENSE)
 
-> Status: developer preview. The output is a static prediction of instruction discovery, not proof that a model will follow an instruction.
+See which repository instructions coding agents are predicted to receive—for a specific file, with provenance—before configuration drift reaches an agent session or CI.
 
-## Why this exists
+Agent Config Inspector is a local, offline CLI for Claude Code, Codex CLI, Gemini CLI, Kimi Code CLI, and GitHub Copilot CLI. It discovers each provider's applicable instruction files, explains why they apply, and compares the resulting instruction graphs without executing repository code or exposing instruction text.
 
-Coding agents use different filenames, hierarchy rules, imports, and path scopes. A repository can therefore look consistently configured while its agents receive different guidance. Agent Config Inspector makes that difference visible with provenance and conservative findings.
+> **Developer preview:** results are static predictions of instruction discovery, not proof that a model will follow an instruction.
 
-The current source registry contains:
+## Why use it?
 
-- `anthropic-claude-code/cli` (`claude` alias)
-- `github-copilot/cli` (`copilot` alias)
-- `google-gemini/cli` (`gemini` alias)
-- `moonshotai-kimi-code/cli` (`kimi` alias)
-- `openai-codex/cli` (`codex` alias)
+A repository can contain `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, imports, nested rules, and path-specific instructions. Each coding agent resolves them differently, so agents working on the same file may receive different guidance.
 
-Grok has been deliberately skipped. Copilot coding agent, code review, VS Code, and other agents remain separate planned adapters; requests for those surfaces fail as unsupported instead of inheriting CLI behavior.
+Agent Config Inspector makes those differences visible:
 
-## Current capabilities
+- discover which instruction sources apply to a target path;
+- explain why each source was included, excluded, or overridden;
+- compare the predicted instruction graphs of multiple providers;
+- detect repository instruction drift in pull requests;
+- inventory repository-owned skills, custom agents, and MCP declarations.
 
-- Resolves root and nested `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, recursive `.claude/rules/**/*.md`, path globs, and bounded `@imports`.
-- Resolves root and nested `AGENTS.override.md`, `AGENTS.md`, Codex fallback filenames, and the combined project instruction byte budget.
-- Resolves Gemini CLI v0.50.0 hierarchical context, configured context filenames, memory boundaries, target-specific JIT context, and bounded `@imports`.
-- Resolves Kimi Code CLI 0.29.0 user and project instruction hierarchy, branded files, lowercase fallback, and soft 32 KiB guidance.
-- Resolves Copilot CLI v1.0.73 standard instruction locations, compatible agent files, path-specific `applyTo` globs, identical-source deduplication, and bounded supported imports.
-- Inventories repository-owned Claude Code and Codex CLI Agent Skills for a selected path without exposing skill descriptions or bodies.
-- Inventories repository-owned Claude Code and Codex CLI custom agents without exposing descriptions, prompts, or configuration values.
-- Inventories repository-owned Claude Code and Codex CLI MCP server declarations without exposing commands, URLs, credentials, or tool configuration values and without starting a server.
-- Compares normalized instruction units without an LLM or network call.
-- Explains included and excluded sources, precedence, evidence, token estimates, and confidence.
-- Rejects workspace escapes and external imports by default.
-- Hides instruction contents and absolute workspace paths in text and JSON output.
-- Reads known user-level instruction locations only with `--include-user-context`, then redacts path, content, digest, size, and token estimates.
-- Pins deterministic repository-only lockfiles and verifies pull-request drift.
-- Emits GitHub-compatible SARIF 2.1.0 without external or user-source locations.
-- Offers an opt-in, generated-fixture behavioral probe for one root-discovery claim for each of the four adapters released through v0.4.0; Copilot CLI probing is not yet supported.
+## Quick start
 
-## Build
-
-Go 1.25 or newer is required.
+Go 1.25 or newer is required. The core currently has no third-party Go module dependencies.
 
 ```bash
-git clone git@github.com:east-true/agent-config-inspector.git
+git clone https://github.com/east-true/agent-config-inspector.git
 cd agent-config-inspector
 go build -o bin/agent-config-inspector ./cmd/agent-config-inspector
 ```
 
-No third-party Go module is required for the current core.
-
-## Quick start
-
-Scan the current repository for all supported providers:
+Scan a repository for Claude Code and Codex CLI instructions that apply to one file:
 
 ```bash
-./bin/agent-config-inspector scan .
-```
-
-Reports never infer or print the workspace directory name. Add an explicit safe label when several reports need to be distinguishable:
-
-```bash
-./bin/agent-config-inspector scan . \
-  --workspace-label adaptive-ai-orchestrator
-```
-
-The label is included in text and JSON reports but not snapshots. When no supported instruction source exists, text output now explains the provider-specific filename families that were checked. General README, source code, and application-specific runtime directories are not treated as coding-agent instructions.
-
-Explain Codex resolution for one file:
-
-```bash
-./bin/agent-config-inspector explain . \
-  --provider codex \
-  --target backend/src/users.go
-```
-
-Compare Claude Code and Codex CLI as JSON:
-
-```bash
-./bin/agent-config-inspector diff . \
-  --providers claude,codex \
-  --target backend/src/users.go \
-  --format json
-```
-
-Inventory repository skills available to Claude Code and Codex CLI:
-
-```bash
-./bin/agent-config-inspector inventory skills . \
+./bin/agent-config-inspector scan /path/to/repository \
   --providers claude,codex \
   --target backend/src/users.go
 ```
 
-This command inspects only repository-owned `.claude/skills` and `.agents/skills` directories. It does not read user skills or execute skill scripts. See [Skills inventory](docs/skills-inventory.md).
+Omit `--providers` and `--target` to scan every supported provider at the repository root.
 
-Inventory repository custom agents available to Claude Code and Codex CLI:
+If the result is `predicted-empty`, the report lists the provider-specific instruction locations it checked. README files, source code, and application runtime directories are intentionally outside this instruction scan.
 
-```bash
-./bin/agent-config-inspector inventory agents . \
-  --providers claude,codex \
-  --target backend/src/users.go
-```
+Continue with the [Getting started guide](docs/getting-started.md) for result interpretation, `explain`, `diff`, and workspace labels. Prebuilt Linux and macOS archives with SHA-256 checksums are available on the [Releases page](https://github.com/east-true/agent-config-inspector/releases/latest).
 
-This command inspects repository-owned `.claude/agents` and `.codex/agents` directories only. Descriptions, prompts, tool lists, model values, and MCP configuration values remain hidden, and no agent is started. See [Custom agents inventory](docs/agents-inventory.md).
+## Supported providers
 
-Inventory repository MCP server declarations for Claude Code and Codex CLI:
+All current adapters are preview-quality and model only the named CLI surface. Similar filenames in another product do not imply compatibility.
 
-```bash
-./bin/agent-config-inspector inventory mcp . \
-  --providers claude,codex \
-  --target backend/src/users.go
-```
+| Alias | Provider ID | Surface | Repository instruction baseline |
+|---|---|---|---|
+| `claude` | `anthropic-claude-code/cli` | Claude Code | `CLAUDE.md`, local memory, rules, imports |
+| `codex` | `openai-codex/cli` | Codex CLI | `AGENTS.md`, overrides, fallbacks, byte budget |
+| `gemini` | `google-gemini/cli` | Gemini CLI | `GEMINI.md`, configured context files, boundaries, imports |
+| `kimi` | `moonshotai-kimi-code/cli` | Kimi Code CLI | branded and generic instruction hierarchy, size guidance |
+| `copilot` | `github-copilot/cli` | GitHub Copilot CLI | standard, compatible, and path-specific instructions |
 
-This command inspects only the repository-root Claude `.mcp.json` and target-hierarchy Codex `.codex/config.toml` files. Commands, arguments, URLs, environment/header names and values, authentication and OAuth details, tool names, and approval values remain hidden. No provider or server is started and no network request is made. See [MCP inventory](docs/mcp-inventory.md).
+Grok is deliberately unsupported. Copilot coding agent, code review, IDE integrations, and other adjacent products are separate surfaces and are not inferred from Copilot CLI behavior. See the capability-level [support matrix](docs/support-matrix.md) for exact versions, limits, and evidence.
 
-Fail CI when a warning or error is found:
+## Safe by default
 
-```bash
-./bin/agent-config-inspector scan . --fail-on warning
-```
+- Local, offline, read-only repository scans.
+- No provider CLI, hook, build script, MCP server, or repository command execution.
+- No instruction text or absolute workspace paths in reports.
+- No user-level instructions unless explicitly requested, with opaque output when enabled.
+- No workspace escape or external import traversal by default.
+- Deterministic repository-only snapshots and GitHub-compatible SARIF.
 
-Pin the current repository-owned instruction state and verify it later:
+Read [Privacy](docs/privacy.md), [Limitations](docs/limitations.md), and the [Security policy](SECURITY.md) before expanding scan authority or publishing a report that includes user context.
 
-```bash
-./bin/agent-config-inspector pin .
-./bin/agent-config-inspector verify .
-```
+## Documentation
 
-The default lockfile is `agent-config-inspector.lock.json`. It contains repository-relative paths and digests only. See the [snapshot format](docs/snapshot-format.md).
+The [`docs/` index](docs/index.md) is the entry point for versioned project documentation.
 
-Generate SARIF locally:
+| Start here | Purpose |
+|---|---|
+| [Getting started](docs/getting-started.md) | Build, scan, explain, compare, and interpret results |
+| [CLI reference](docs/cli-reference.md) | Commands, shared options, formats, and exit codes |
+| [CI integration](docs/ci-integration.md) | Snapshots, SARIF, and the GitHub Action |
+| [Support matrix](docs/support-matrix.md) | Provider capabilities, versions, limits, and evidence |
+| [Initial design](docs/initial-design.md) | Architecture, boundaries, and roadmap |
 
-```bash
-./bin/agent-config-inspector verify . --format sarif > agent-config-inspector.sarif
-```
+## Contributing
 
-Use the composite GitHub Action after checking out the repository:
-
-```yaml
-permissions:
-  contents: read
-  security-events: write
-
-steps:
-  - uses: actions/checkout@v7.0.1
-  - uses: east-true/agent-config-inspector@v0.7.0
-    with:
-      command: verify
-      snapshot: agent-config-inspector.lock.json
-      fail-on: warning
-      version: v0.7.0
-      upload-sarif: "true"
-```
-
-The Action downloads the selected GitHub Release, verifies its SHA-256 entry from `checksums.txt`, and then runs it. Set the `version` input to an exact release tag when a workflow requires a fixed binary.
-
-Inspect the exact provider registry:
-
-```bash
-./bin/agent-config-inspector providers list
-./bin/agent-config-inspector providers show kimi
-```
-
-Preview a behavioral probe without starting a provider CLI or making a model request:
-
-```bash
-./bin/agent-config-inspector probe codex
-```
-
-Actual execution requires both `--execute` and `--acknowledge-quota`, uses a documented process-scoped API credential, and may consume quota. Read [Behavioral probes](docs/behavioral-probes.md) before running one.
-
-## Exit codes
-
-| Code | Meaning |
-|---:|---|
-| 0 | Completed below the configured finding threshold |
-| 1 | A finding reached `--fail-on` |
-| 2 | Invalid CLI usage or configuration |
-| 3 | Internal error or incomplete result |
-| 4 | Unsupported provider, surface, version, or probe case |
-| 5 | Safety policy refused the request |
-
-Warnings do not fail by default. Use `--fail-on warning` for a stricter CI policy or `--fail-on never` for an informational run.
-
-## Privacy model
-
-The default scan is local, offline, read-only, repository-scoped, and does not execute provider CLIs, hooks, build scripts, MCP servers, or repository commands. Output contains metadata and content digests for repository-owned sources, never instruction text.
-
-User-level instructions are excluded unless `--include-user-context` is supplied. In that mode, only documented user instruction locations are inventoried and output identifiers remain opaque. See [Privacy](docs/privacy.md) and [Security policy](SECURITY.md) before publishing a report produced with local context.
-
-`pin` and `verify` deliberately refuse `--include-user-context`. A commit-ready lockfile cannot represent user-source existence, paths, content, fingerprints, or token counts.
-
-`probe` is a separate opt-in network path. Its default plan mode does not start a provider or read credentials. Explicit execution uses a synthetic temporary workspace and isolated home, passes only an allowlisted environment, and discards bounded provider output after marker/failure classification. It never probes the selected repository.
-
-## Accuracy boundary
-
-Adapters are based on current official discovery documentation and deliberately report their checked date. Runtime flags, trust decisions, managed policy, version drift, and agent behavior can change the actual result. See the [support matrix](docs/support-matrix.md) and [limitations](docs/limitations.md).
-
-Primary semantics references:
-
-- [Claude Code memory and instruction discovery](https://code.claude.com/docs/en/memory)
-- [Codex `AGENTS.md` guide](https://developers.openai.com/codex/guides/agents-md)
-- [Gemini CLI adapter contract](docs/gemini-cli.md)
-- [Gemini CLI context files](https://geminicli.com/docs/cli/gemini-md/)
-- [Gemini CLI memory import processor](https://geminicli.com/docs/reference/memport/)
-- [Kimi Code CLI adapter contract](docs/kimi-code-cli.md)
-- [Kimi Code CLI 0.29.0 instruction loader](https://github.com/MoonshotAI/kimi-code/blob/%40moonshot-ai%2Fkimi-code%400.29.0/packages/agent-core/src/profile/context.ts)
-- [Copilot CLI adapter contract](docs/copilot-cli.md)
-- [Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
-- [Behavioral probe contract and evidence registry](docs/behavioral-probes.md)
-- [Agent Skills inventory contract](docs/skills-inventory.md)
-- [Custom agents inventory contract](docs/agents-inventory.md)
-- [MCP inventory contract](docs/mcp-inventory.md)
-
-## Development
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before adding a provider, changing a schema, or modifying discovery behavior.
 
 ```bash
 go test ./...
 go vet ./...
 go build ./cmd/agent-config-inspector
+go run ./cmd/agent-config-inspector verify .
 git diff --check
 ```
-
-The detailed architecture and roadmap are in [docs/initial-design.md](docs/initial-design.md). Contributions are welcome; read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ## License
 
