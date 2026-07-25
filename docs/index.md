@@ -49,7 +49,7 @@ Inventories describe discoverable configuration without activating skills, start
 | Document | Purpose |
 |---|---|
 | [Initial design](initial-design.md) | Architecture decisions, delivery phases, and roadmap |
-| [Snapshot canonicalization ADR](adr/0006-snapshot-canonicalization.md) | Snapshot hashing and deterministic serialization decision |
+| [Architecture Decision Records](adr/README.md) | Foundational decisions (0001–0008): scope, language, adapter boundary, redaction, evidence layers, snapshots, no-execution, glob |
 | [Contributing](../CONTRIBUTING.md) | Evidence, tests, fixtures, and pull-request expectations |
 
 Documentation changes should accompany the implementation or contract change they describe. Avoid copying canonical details into another documentation system; link to the relevant file instead.

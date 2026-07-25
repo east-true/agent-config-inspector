@@ -1776,9 +1776,11 @@ agent-config-inspector/
 │   └── hostile/
 ├── docs/
 │   ├── initial-design.md
-│   ├── provider-support.md
+│   ├── index.md
+│   ├── support-matrix.md
 │   ├── privacy.md
-│   ├── threat-model.md
+│   ├── limitations.md
+│   ├── snapshot-format.md
 │   └── adr/
 ├── .github/
 │   └── workflows/
@@ -2486,11 +2488,11 @@ scanner를 둔다.
 
 다음은 구현 전 ADR이 필요한 항목이다.
 
-1. CLI framework로 Cobra를 사용할지 standard library를 사용할지
-2. CommonMark parser 선택
-3. provider별 glob을 단일 library로 감쌀 수 있는지
+1. ~~CLI framework로 Cobra를 사용할지 standard library를 사용할지~~ → standard library `flag`로 결정(무의존성), ADR 0002 참조
+2. ~~CommonMark parser 선택~~ → 외부 library 없이 in-tree 파서로 결정(무의존성), ADR 0002 참조
+3. ~~provider별 glob을 단일 library로 감쌀 수 있는지~~ → 단일 외부 library 대신 in-tree glob + adapter별 dialect 처리로 결정, ADR 0008 참조
 4. target 자동 발견을 어느 범위까지 할지
-5. token estimate를 provider tokenizer 없이 어떻게 표시할지
+5. token estimate를 provider tokenizer 없이 어떻게 표시할지 (현재 `UTF-8 bytes / 4` fallback으로 구현, 12.5절 참조 — 전용 ADR 미작성)
 6. repository config filename 확정
 7. ~~lockfile filename 확정~~ → `agent-config-inspector.lock.json`으로 결정, ADR 0006 참조
 8. public Go API를 alpha에 노출할지
@@ -2515,16 +2517,19 @@ options, decision, consequences를 기록한다.
 
 ## 38. 문서 계획
 
-첫 공개 MVP 전에 다음 문서가 필요하다.
+아래는 첫 공개 MVP 전에 계획한 문서 목록과, 실제 문서 hub(`docs/index.md`)로
+정착된 뒤의 현재 상태다. 계획 당시 이름이 재조직되거나 다른 문서로 흡수된 항목은
+현재 위치를 함께 표기한다.
 
-- `README.md`: 10초 안에 문제와 예시 이해
-- `docs/provider-support.md`: provider/surface/version/evidence matrix
-- `docs/privacy.md`: 읽는 파일, 저장하는 정보, redaction
-- `docs/threat-model.md`: untrusted repository 처리
-- `docs/snapshot-format.md`: lockfile schema와 canonicalization
-- `docs/adapter-authoring.md`: 새 provider 기여 방법
-- `CONTRIBUTING.md`: 개발 및 fixture 규칙
-- `SECURITY.md`: 비공개 취약점 신고 절차
+- `README.md`: 10초 안에 문제와 예시 이해 — 존재
+- provider/surface/version/evidence matrix → `docs/support-matrix.md`로 정착(계획 시 가칭 `provider-support.md`)
+- `docs/privacy.md`: 읽는 파일, 저장하는 정보, redaction — 존재
+- untrusted repository 처리(위협 모델) → `SECURITY.md`와 본 문서 22절로 흡수(별도 `threat-model.md`는 만들지 않음)
+- `docs/snapshot-format.md`: lockfile schema와 canonicalization — 존재
+- 새 provider 기여 방법(`docs/adapter-authoring.md`): **미작성**. 현재는 `CONTRIBUTING.md`의 “Adapter expectations”가 부분 커버하며, 33절 1.0 게이트의 adapter contribution guide로 완성한다.
+- `CONTRIBUTING.md`: 개발 및 fixture 규칙 — 존재
+- `SECURITY.md`: 비공개 취약점 신고 절차 — 존재
+- 추가: `docs/getting-started.md`, `docs/cli-reference.md`, `docs/ci-integration.md`, `docs/limitations.md`, provider별 adapter 문서, inventory 문서, `docs/adr/`(0001–0008)가 hub에 포함되었다.
 
 README는 “모든 agent가 실제로 무엇을 보는지 완벽히 안다”고 주장하지 않는다. 지원
 surface와 evidence 상태를 첫 화면에서 확인할 수 있게 한다.
