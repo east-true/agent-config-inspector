@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible problem in Agent Config Inspector
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report a bug. Please avoid including private repository contents or secrets.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and why it is a problem.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the command and a minimal repository layout or fixture when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Agent Config Inspector version
+      placeholder: v0.x.x or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: go
+    attributes:
+      label: Go version
+      placeholder: go1.25.x
+  - type: input
+    id: provider
+    attributes:
+      label: Provider(s)
+      placeholder: claude, codex, gemini, kimi, copilot
+  - type: input
+    id: target
+    attributes:
+      label: Target path
+      description: Use a sanitized relative path if the real path is sensitive.
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant output
+      description: Paste only sanitized logs or output. Do not include secrets or private instruction text.
+      render: shell
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
